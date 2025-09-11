@@ -485,7 +485,7 @@ class MarginTradingWebApp:
                    "• **维持担保比例**：衡量市场整体杠杆风险的安全垫指标，130%为最低要求\n" +
                    "• 所有图表纵轴范围均已优化至实际数据范围，鼠标悬停可查看详细数值")
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         # 占比分析图
         if config['show_ratio_chart']:
@@ -551,7 +551,7 @@ class MarginTradingWebApp:
                        "• 纵轴范围已优化至实际数据范围，突出变化幅度\n" +
                        "• 鼠标悬停可查看详细数据")
                 
-                st.plotly_chart(fig_ratio, use_container_width=True)
+                st.plotly_chart(fig_ratio, width='stretch')
             
             # RSI相对强弱指标
             if '两融余额_RSI' in df.columns:
@@ -577,7 +577,7 @@ class MarginTradingWebApp:
                     yaxis=dict(range=[0, 100])
                 )
                 
-                st.plotly_chart(fig_rsi, use_container_width=True)
+                st.plotly_chart(fig_rsi, width='stretch')
         
         # 相关性分析
         if config['show_correlation']:
@@ -605,7 +605,7 @@ class MarginTradingWebApp:
                     height=500
                 )
                 
-                st.plotly_chart(fig_heatmap, use_container_width=True)
+                st.plotly_chart(fig_heatmap, width='stretch')
     
     def show_data_table(self):
         """显示数据表格"""
@@ -643,7 +643,7 @@ class MarginTradingWebApp:
                         elif '率' in col or '比' in col:
                             display_df[col] = display_df[col].apply(lambda x: f"{x:.2f}%" if pd.notna(x) else 'N/A')
                 
-                st.dataframe(display_df, use_container_width=True, height=400)
+                st.dataframe(display_df, width='stretch', height=400)
                 
                 # 下载按钮
                 if st.button("📥 下载数据"):

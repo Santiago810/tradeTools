@@ -362,15 +362,29 @@ class MarginDataFetcher:
             # 获取沪深股市成交金额
             self.logger.info("正在获取市场成交金额数据...")
             
-            # 沪市成交金额
-            sh_turnover = ak.stock_zh_a_hist_daily_tx(symbol="000001", 
-                                                    start_date=start_date, 
-                                                    end_date=end_date)
-            
-            # 深市成交金额
-            sz_turnover = ak.stock_zh_a_hist_daily_tx(symbol="399001", 
-                                                    start_date=start_date, 
-                                                    end_date=end_date)
+            # 使用AKShare的新接口获取股票历史数据
+            # 替换已废弃的 stock_zh_a_hist_daily_tx 函数
+            try:
+                # 沪市成交金额 (上证指数)
+                sh_turnover = ak.stock_zh_a_hist(symbol="sh000001", 
+                                               period="daily",
+                                               start_date=start_date, 
+                                               end_date=end_date)
+                
+                # 深市成交金额 (深证成指)
+                sz_turnover = ak.stock_zh_a_hist(symbol="sz399001", 
+                                               period="daily",
+                                               start_date=start_date, 
+                                               end_date=end_date)
+            except AttributeError:
+                # 如果上述接口不可用，尝试其他可能的接口
+                self.logger.warning("stock_zh_a_hist接口不可用，尝试备选方案")
+                try:
+                    # 尝试使用市场概况数据作为替代
+                    sh_turnover = ak.stock_zh_a_spot_em()
+                    sz_turnover = ak.stock_zh_a_spot_em()
+                except Exception as e:
+                    raise e
             
             # 合并数据
             if not sh_turnover.empty and not sz_turnover.empty:
