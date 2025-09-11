@@ -24,7 +24,7 @@ from visualizer import create_margin_visualizer
 
 # 页面配置
 st.set_page_config(
-    page_title="A股两融交易查询系统",
+    page_title="A股金融数据分析系统",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -60,6 +60,33 @@ st.markdown("""
         border-left: 4px solid #2196f3;
         margin: 1rem 0;
     }
+    .feature-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #1f77b4;
+    }
+    .feature-description {
+        color: #666;
+        font-size: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -70,6 +97,7 @@ class MarginTradingWebApp:
         self._initialize_app()
         if 'app_initialized' not in st.session_state:
             st.session_state.app_initialized = True
+            st.session_state.current_page = "main"  # 添加页面状态管理
     
     def _initialize_app(self):
         """初始化应用"""
@@ -92,25 +120,203 @@ class MarginTradingWebApp:
         if 'analysis_result' not in st.session_state:
             st.session_state.analysis_result = {}
     
-    def show_header(self):
-        """显示页面头部"""
-        st.markdown('<div class="main-header">📊 A股两融交易查询系统</div>', 
+    def show_main_page(self):
+        """显示主页"""
+        st.markdown('<div class="main-header">📊 A股金融数据分析系统</div>', 
                    unsafe_allow_html=True)
         
         st.markdown("""
         <div class="info-box">
-            <h4>🎯 系统功能</h4>
-            <ul>
-                <li>📈 查询A股市场两融交易数据</li>
-                <li>📊 分析两融余额趋势和占比</li>
-                <li>📉 生成专业的数据可视化图表</li>
-                <li>📋 导出详细的分析报告</li>
-            </ul>
+            <h3>欢迎使用A股金融数据分析系统</h3>
+            <p>本系统提供专业的A股市场数据分析功能，帮助投资者做出更明智的投资决策。</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # 创建功能卡片布局
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <div class="feature-title">两融交易查询</div>
+                <div class="feature-description">查询和分析A股市场的融资融券交易数据，包括余额趋势、占比分析等</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("进入两融交易查询", type="primary", use_container_width=True):
+                st.session_state.current_page = "margin"
+                st.rerun()
+        
+        with col2:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">💰</div>
+                <div class="feature-title">ETF基金查询</div>
+                <div class="feature-description">查询和分析ETF基金的资金流向、份额变动、申购赎回情况</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("进入ETF基金查询", type="primary", use_container_width=True):
+                st.session_state.current_page = "etf"
+                st.rerun()
+        
+        # 系统介绍
+        st.markdown("### 📊 系统功能介绍")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            #### 两融交易分析功能
+            - **数据查询**：从多个数据源获取A股两融交易数据
+            - **趋势分析**：计算两融余额变化趋势和技术指标
+            - **占比计算**：分析融资融券在市场中的占比情况
+            - **数据可视化**：生成专业的图表和交互式仪表板
+            """)
+        
+        with col2:
+            st.markdown("""
+            #### ETF基金分析功能
+            - **资金流向**：分析ETF基金的净申购赎回情况
+            - **份额变动**：跟踪ETF基金总份额的变化情况
+            - **申购赎回**：监控场外投资者申购和赎回ETF的情况
+            - **综合分析**：提供ETF基金的全面数据分析报告
+            """)
+        
+        st.markdown("### ⚠️ 使用说明")
+        st.markdown("""
+        1. 点击上方功能按钮进入相应的查询界面
+        2. 每个功能模块完全独立，互不影响
+        3. 首次查询可能需要较长时间，请耐心等待
+        4. 建议查询时间范围不超过1年，以确保查询效率
+        """)
     
-    def show_sidebar(self):
-        """显示侧边栏配置"""
+    def show_margin_trading_page(self):
+        """显示两融交易查询页面"""
+        # 页面标题和返回按钮
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("← 返回主页"):
+                st.session_state.current_page = "main"
+                st.rerun()
+        with col2:
+            st.markdown('<div class="main-header">📈 A股两融交易查询</div>', 
+                       unsafe_allow_html=True)
+        
+        # 显示侧边栏并获取配置
+        config = self.show_margin_sidebar()
+        
+        # 如果点击查询按钮
+        if config['query_button']:
+            success = self.query_margin_data(config)
+            
+            if success:
+                st.rerun()
+        
+        # 如果有数据，显示结果
+        if not st.session_state.processed_data.empty:
+            # 显示汇总指标
+            self.show_summary_metrics()
+            
+            # 显示图表
+            self.show_margin_charts(config)
+            
+            # 显示数据表格
+            with st.expander("📋 查看详细数据", expanded=False):
+                self.show_margin_data_table()
+    
+    def show_etf_page(self):
+        """显示ETF查询页面"""
+        # 页面标题和返回按钮
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("← 返回主页"):
+                st.session_state.current_page = "main"
+                st.rerun()
+        with col2:
+            st.markdown('<div class="main-header">💰 ETF基金查询</div>', 
+                       unsafe_allow_html=True)
+        
+        # ETF查询配置
+        st.sidebar.header("🔧 ETF查询配置")
+        
+        # ETF代码输入
+        etf_code = st.sidebar.text_input("请输入ETF代码", value="510310", 
+                                        help="例如：510310 (沪深300ETF), 510050 (上证50ETF)")
+        
+        # 日期范围选择
+        st.sidebar.subheader("📅 日期范围")
+        
+        col1, col2 = st.sidebar.columns(2)
+        
+        with col1:
+            start_date = st.date_input(
+                "开始日期",
+                value=datetime.now() - timedelta(days=30),
+                max_value=datetime.now()
+            )
+        
+        with col2:
+            end_date = st.date_input(
+                "结束日期",
+                value=datetime.now(),
+                max_value=datetime.now()
+            )
+        
+        # 查询选项
+        st.sidebar.subheader("⚙️ 查询选项")
+        
+        use_cache = st.sidebar.checkbox("使用缓存数据", value=True, 
+                                       help="使用缓存可以加快查询速度")
+        
+        # 图表选项
+        st.sidebar.subheader("📊 图表选项")
+        
+        show_fund_flow_chart = st.sidebar.checkbox("资金流向图", value=True)
+        show_share_change_chart = st.sidebar.checkbox("份额变动图", value=True)
+        show_subscription_chart = st.sidebar.checkbox("申购赎回图", value=True)
+        show_comprehensive_chart = st.sidebar.checkbox("综合分析图", value=True)
+        
+        # 查询按钮
+        query_button = st.sidebar.button("🚀 开始查询", type="primary")
+        
+        config = {
+            'etf_code': etf_code,
+            'start_date': start_date.strftime('%Y%m%d'),
+            'end_date': end_date.strftime('%Y%m%d'),
+            'use_cache': use_cache,
+            'show_fund_flow_chart': show_fund_flow_chart,
+            'show_share_change_chart': show_share_change_chart,
+            'show_subscription_chart': show_subscription_chart,
+            'show_comprehensive_chart': show_comprehensive_chart,
+            'query_button': query_button
+        }
+        
+        # 如果点击查询按钮
+        if config['query_button']:
+            success = self.query_etf_data(config)
+            
+            if success:
+                st.rerun()
+        
+        # 如果有数据，显示结果
+        if 'etf_data' in st.session_state and st.session_state.etf_data:
+            # 显示ETF基本信息
+            self.show_etf_info(st.session_state.etf_data.get('info', {}))
+            
+            # 显示汇总指标
+            self.show_etf_summary_metrics(st.session_state.etf_data.get('analysis', {}))
+            
+            # 显示图表
+            self.show_etf_charts(config, st.session_state.etf_data)
+            
+            # 显示数据表格
+            with st.expander("📋 查看详细数据", expanded=False):
+                self.show_etf_data_table(st.session_state.etf_data)
+    
+    def show_margin_sidebar(self):
+        """显示两融交易查询侧边栏配置"""
         st.sidebar.header("🔧 查询配置")
         
         # 日期范围选择
@@ -167,8 +373,8 @@ class MarginTradingWebApp:
             'query_button': query_button
         }
     
-    def query_data(self, config):
-        """查询数据"""
+    def query_margin_data(self, config):
+        """查询两融数据"""
         try:
             with st.spinner("正在获取两融数据..."):
                 # 获取两融数据
@@ -209,8 +415,79 @@ class MarginTradingWebApp:
             st.error(f"❌ 查询失败: {str(e)}")
             return False
     
+    def query_etf_data(self, config):
+        """查询ETF数据"""
+        try:
+            # 初始化ETF组件
+            from etf_fetcher import create_etf_fetcher
+            from etf_processor import create_etf_processor
+            from etf_visualizer import create_etf_visualizer
+            
+            etf_fetcher = create_etf_fetcher()
+            etf_processor = create_etf_processor()
+            etf_visualizer = create_etf_visualizer()
+            
+            with st.spinner("正在获取ETF基本信息..."):
+                # 获取ETF基本信息
+                etf_info = etf_fetcher.get_etf_info(config['etf_code'])
+            
+            with st.spinner("正在获取ETF资金流向数据..."):
+                # 获取ETF资金流向数据
+                fund_flow_data = etf_fetcher.get_etf_fund_flow(
+                    config['etf_code'], 
+                    config['start_date'], 
+                    config['end_date']
+                )
+                
+            with st.spinner("正在获取ETF份额变动数据..."):
+                # 获取ETF份额变动数据
+                share_change_data = etf_fetcher.get_etf_share_changes(
+                    config['etf_code'], 
+                    config['start_date'], 
+                    config['end_date']
+                )
+                
+            with st.spinner("正在获取ETF场外市场数据..."):
+                # 获取ETF场外市场数据
+                outside_data = etf_fetcher.get_etf_outside_market_data(
+                    config['etf_code'], 
+                    config['start_date'], 
+                    config['end_date']
+                )
+                
+            with st.spinner("正在获取ETF分钟数据..."):
+                # 获取ETF分钟数据（用于实时估值和换手率分析）
+                minute_data = etf_fetcher.get_etf_minute_data(config['etf_code'])
+                
+            with st.spinner("正在获取ETF融资买入数据..."):
+                # 获取ETF融资买入数据
+                margin_data = etf_fetcher.get_etf_margin_data(
+                    config['etf_code'], 
+                    config['start_date'], 
+                    config['end_date']
+                )
+                
+            with st.spinner("正在处理ETF数据..."):
+                # 处理ETF数据
+                processed_etf_data = etf_processor.process_etf_data(
+                    fund_flow_data, share_change_data, outside_data, minute_data, margin_data
+                )
+                
+                # 添加基本信息
+                processed_etf_data['info'] = etf_info
+                
+                # 保存到session state
+                st.session_state.etf_data = processed_etf_data
+            
+            st.success(f"✅ 成功获取并处理了ETF {config['etf_code']} 的数据")
+            return True
+            
+        except Exception as e:
+            st.error(f"❌ ETF查询失败: {str(e)}")
+            return False
+    
     def show_summary_metrics(self):
-        """显示汇总指标"""
+        """显示两融汇总指标"""
         if st.session_state.analysis_result:
             st.subheader("📊 数据概览")
             
@@ -299,8 +576,137 @@ class MarginTradingWebApp:
                         delta=f"RSI: {rsi_value}"
                     )
     
-    def show_charts(self, config):
-        """显示图表"""
+    def show_etf_info(self, etf_info: dict):
+        """显示ETF基本信息"""
+        if etf_info:
+            st.subheader("📈 ETF基本信息")
+            
+            # 显示基金名称和代码
+            fund_name = etf_info.get('基金简称', f'ETF-{etf_info.get("基金代码", "N/A")}')
+            fund_code = etf_info.get('基金代码', 'N/A')
+            st.markdown(f"### {fund_name} ({fund_code})")
+            
+            # 显示基本信息
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    label="📅 成立日期",
+                    value=etf_info.get('成立日期', 'N/A')
+                )
+            
+            with col2:
+                st.metric(
+                    label="💰 基金规模",
+                    value=etf_info.get('基金规模', 'N/A')
+                )
+            
+            with col3:
+                st.metric(
+                    label="📊 跟踪标的",
+                    value=etf_info.get('跟踪标的', 'N/A')
+                )
+    
+    def show_etf_summary_metrics(self, analysis: dict):
+        """显示ETF汇总指标"""
+        if analysis:
+            st.subheader("📊 ETF数据概览")
+            
+            # 资金流向分析
+            if 'fund_flow' in analysis:
+                fund_flow = analysis['fund_flow']
+                st.markdown("#### 💰 资金流向分析")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        label="总净流入",
+                        value=f"{fund_flow.get('total_net_flow', 0):,.2f}万元"
+                    )
+                
+                with col2:
+                    st.metric(
+                        label="日均净流入",
+                        value=f"{fund_flow.get('avg_daily_flow', 0):,.2f}万元"
+                    )
+                
+                with col3:
+                    st.metric(
+                        label="最新流向",
+                        value=f"{fund_flow.get('latest_flow', 0):,.2f}万元"
+                    )
+                
+                with col4:
+                    st.metric(
+                        label="近期趋势",
+                        value=fund_flow.get('recent_trend', 'N/A')
+                    )
+            
+            # 份额变动分析
+            if 'share_changes' in analysis:
+                share_changes = analysis['share_changes']
+                st.markdown("#### 📈 份额变动分析")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        label="期初份额",
+                        value=f"{share_changes.get('initial_shares', 0):,.2f}万份"
+                    )
+                
+                with col2:
+                    st.metric(
+                        label="期末份额",
+                        value=f"{share_changes.get('final_shares', 0):,.2f}万份"
+                    )
+                
+                with col3:
+                    st.metric(
+                        label="总变动",
+                        value=f"{share_changes.get('total_change', 0):,.2f}万份"
+                    )
+                
+                with col4:
+                    st.metric(
+                        label="变动率",
+                        value=f"{share_changes.get('change_rate', 0):.2f}%"
+                    )
+            
+            # 场外市场分析
+            if 'outside_market' in analysis:
+                outside_market = analysis['outside_market']
+                st.markdown("#### 🏦 场外市场分析")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        label="总申购",
+                        value=f"{outside_market.get('total_subscription', 0):,.2f}万元"
+                    )
+                
+                with col2:
+                    st.metric(
+                        label="总赎回",
+                        value=f"{outside_market.get('total_redemption', 0):,.2f}万元"
+                    )
+                
+                with col3:
+                    st.metric(
+                        label="净申购",
+                        value=f"{outside_market.get('net_subscription', 0):,.2f}万元"
+                    )
+                
+                with col4:
+                    st.metric(
+                        label="近期趋势",
+                        value=outside_market.get('recent_subscription_trend', 'N/A')
+                    )
+    
+    def show_margin_charts(self, config):
+        """显示两融图表"""
         if st.session_state.processed_data.empty:
             return
         
@@ -607,8 +1013,100 @@ class MarginTradingWebApp:
                 
                 st.plotly_chart(fig_heatmap, width='stretch')
     
-    def show_data_table(self):
-        """显示数据表格"""
+    def show_etf_charts(self, config, etf_data):
+        """显示ETF图表"""
+        # 初始化ETF可视化器
+        from etf_visualizer import create_etf_visualizer
+        etf_visualizer = create_etf_visualizer()
+        
+        # 获取数据
+        fund_flow_data = etf_data.get('fund_flow', pd.DataFrame())
+        share_change_data = etf_data.get('share_changes', pd.DataFrame())
+        outside_data = etf_data.get('outside_market', pd.DataFrame())
+        minute_data = etf_data.get('minute_data', pd.DataFrame())
+        margin_data = etf_data.get('margin_data', pd.DataFrame())
+        
+        # 创建标签页
+        tab1, tab2, tab3, tab4 = st.tabs(["基础图表", "实时估值分析", "换手率分析", "融资买入分析"])
+        
+        # 基础图表标签页
+        with tab1:
+            # 资金流向图
+            if config['show_fund_flow_chart'] and not fund_flow_data.empty:
+                st.subheader("💰 ETF资金流向趋势")
+                fund_flow_fig = etf_visualizer.create_fund_flow_chart(fund_flow_data)
+                st.plotly_chart(fund_flow_fig, width='stretch')
+            
+            # 份额变动图
+            if config['show_share_change_chart'] and not share_change_data.empty:
+                st.subheader("📈 ETF份额变动趋势")
+                share_change_fig = etf_visualizer.create_share_change_chart(share_change_data)
+                st.plotly_chart(share_change_fig, width='stretch')
+            
+            # 申购赎回图
+            if config['show_subscription_chart'] and not outside_data.empty:
+                st.subheader("🏦 ETF申购赎回情况")
+                subscription_fig = etf_visualizer.create_subscription_redemption_chart(outside_data)
+                st.plotly_chart(subscription_fig, width='stretch')
+            
+            # 综合分析图
+            if config['show_comprehensive_chart'] and (not fund_flow_data.empty or 
+                                                      not share_change_data.empty or 
+                                                      not outside_data.empty):
+                st.subheader("📊 ETF综合分析图表")
+                comprehensive_fig = etf_visualizer.create_comprehensive_etf_chart(
+                    fund_flow_data, share_change_data, outside_data)
+                st.plotly_chart(comprehensive_fig, width='stretch')
+        
+        # 实时估值分析标签页
+        with tab2:
+            st.subheader("📈 ETF实时估值与价格变化趋势")
+            if not minute_data.empty:
+                realtime_fig = etf_visualizer.create_etf_realtime_valuation_chart(minute_data)
+                st.plotly_chart(realtime_fig, width='stretch')
+                
+                # 添加说明
+                st.info("💡 **图表说明**：\n" +
+                       "• **收盘价**：ETF在每个时间点的收盘价格\n" +
+                       "• **均价**：作为实时估值的近似值，反映ETF的平均交易价格\n" +
+                       "• 图表显示了ETF在查询当天的价格变化趋势")
+            else:
+                st.info("暂无分钟级别数据，无法显示实时估值分析")
+        
+        # 换手率分析标签页
+        with tab3:
+            st.subheader("🔄 ETF换手率变化曲线")
+            if not minute_data.empty:
+                turnover_fig = etf_visualizer.create_turnover_rate_chart(minute_data)
+                st.plotly_chart(turnover_fig, width='stretch')
+                
+                # 添加说明
+                st.info("💡 **图表说明**：\n" +
+                       "• **换手率**：反映ETF的交易活跃程度，按日计算\n" +
+                       "• **均值线**：换手率的历史均值参考线\n" +
+                       "• 图表显示了ETF每日的换手率变化趋势")
+            else:
+                st.info("暂无分钟级别数据，无法显示换手率分析")
+        
+        # 融资买入分析标签页
+        with tab4:
+            st.subheader("💼 ETF融资买入数据变化曲线")
+            margin_fig = etf_visualizer.create_margin_trading_chart(margin_data)
+            st.plotly_chart(margin_fig, width='stretch')
+            
+            # 添加说明
+            if margin_data.empty:
+                st.info("💡 **说明**：\n" +
+                       "• 该ETF暂无融资买入数据，可能不是融资融券标的\n" +
+                       "• 融资买入数据通常只对特定的融资融券标的ETF可用")
+            else:
+                st.info("💡 **图表说明**：\n" +
+                       "• **融资买入额**：投资者通过融资方式买入该ETF的金额\n" +
+                       "• **融资余额**：当前未偿还的融资金额\n" +
+                       "• 数据反映了市场对该ETF的杠杆交易需求")
+    
+    def show_margin_data_table(self):
+        """显示两融数据表格"""
         if not st.session_state.processed_data.empty:
             st.subheader("📋 详细数据")
             
@@ -655,57 +1153,74 @@ class MarginTradingWebApp:
                         mime="text/csv"
                     )
     
+    def show_etf_data_table(self, etf_data):
+        """显示ETF数据表格"""
+        if etf_data:
+            st.subheader("📋 ETF详细数据")
+            
+            # 创建标签页显示不同类型的数据
+            tab1, tab2, tab3 = st.tabs(["资金流向", "份额变动", "场外市场"])
+            
+            with tab1:
+                fund_flow_data = etf_data.get('fund_flow', pd.DataFrame())
+                if not fund_flow_data.empty:
+                    st.dataframe(fund_flow_data, width='stretch', height=400)
+                    
+                    # 下载按钮
+                    if st.button("📥 下载资金流向数据"):
+                        csv = fund_flow_data.to_csv(index=False, encoding='utf-8-sig')
+                        st.download_button(
+                            label="下载CSV文件",
+                            data=csv,
+                            file_name=f"etf_fund_flow_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv"
+                        )
+                else:
+                    st.info("暂无资金流向数据")
+            
+            with tab2:
+                share_change_data = etf_data.get('share_changes', pd.DataFrame())
+                if not share_change_data.empty:
+                    st.dataframe(share_change_data, width='stretch', height=400)
+                    
+                    # 下载按钮
+                    if st.button("📥 下载份额变动数据"):
+                        csv = share_change_data.to_csv(index=False, encoding='utf-8-sig')
+                        st.download_button(
+                            label="下载CSV文件",
+                            data=csv,
+                            file_name=f"etf_share_changes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv"
+                        )
+                else:
+                    st.info("暂无份额变动数据")
+            
+            with tab3:
+                outside_data = etf_data.get('outside_market', pd.DataFrame())
+                if not outside_data.empty:
+                    st.dataframe(outside_data, width='stretch', height=400)
+                    
+                    # 下载按钮
+                    if st.button("📥 下载场外市场数据"):
+                        csv = outside_data.to_csv(index=False, encoding='utf-8-sig')
+                        st.download_button(
+                            label="下载CSV文件",
+                            data=csv,
+                            file_name=f"etf_outside_market_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv"
+                        )
+                else:
+                    st.info("暂无场外市场数据")
+    
     def run(self):
         """运行Web应用"""
-        # 显示头部
-        self.show_header()
-        
-        # 显示侧边栏并获取配置
-        config = self.show_sidebar()
-        
-        # 如果点击查询按钮
-        if config['query_button']:
-            success = self.query_data(config)
-            
-            if success:
-                # 重新运行以显示结果
-                st.rerun()
-        
-        # 如果有数据，显示结果
-        if not st.session_state.processed_data.empty:
-            # 显示汇总指标
-            self.show_summary_metrics()
-            
-            # 显示图表
-            self.show_charts(config)
-            
-            # 显示数据表格
-            with st.expander("📋 查看详细数据", expanded=False):
-                self.show_data_table()
-        
-        # 显示帮助信息
-        with st.expander("❓ 使用帮助", expanded=False):
-            st.markdown("""
-            ### 📖 使用说明
-            
-            1. **设置查询参数**: 在左侧边栏选择日期范围和查询选项
-            2. **开始查询**: 点击"开始查询"按钮获取数据
-            3. **查看结果**: 查看汇总指标、图表和详细数据
-            4. **导出数据**: 在数据表格部分可以下载CSV文件
-            
-            ### 📊 指标说明
-            
-            - **两融余额**: 融资余额和融券余额的总和
-            - **融资占比**: 融资余额在两融余额中的占比
-            - **RSI指标**: 相对强弱指标，用于判断超买超卖
-            - **波动率**: 衡量价格变化的剧烈程度
-            
-            ### ⚠️ 注意事项
-            
-            - 数据来源于公开的金融数据接口
-            - 建议查询时间范围不超过1年，以确保查询效率
-            - 首次查询可能需要较长时间，后续查询会使用缓存加速
-            """)
+        # 根据当前页面显示不同内容
+        if st.session_state.current_page == "main":
+            self.show_main_page()
+        elif st.session_state.current_page == "margin":
+            self.show_margin_trading_page()
+        elif st.session_state.current_page == "etf":
+            self.show_etf_page()
 
 def main():
     """主函数"""
