@@ -1,21 +1,25 @@
 """
-数据可视化模块 - A股两融交易查询系统
-生成各种图表展示两融数据分析结果
+两融数据可视化模块 - A股两融交易查询系统
+生成两融交易数据的图表和仪表板
 """
 
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import seaborn as sns
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-import pandas as pd
-import numpy as np
 import logging
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
-from config import CHART_CONFIG, STORAGE_CONFIG
+import sys
+import os
+
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config import CHART_CONFIG, MARGIN_TRADING_CONFIG, STORAGE_CONFIG
 from utils import format_number, ensure_directories
 
 # 设置中文字体
@@ -27,6 +31,7 @@ class MarginDataVisualizer:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        from config import STORAGE_CONFIG
         self.output_dir = STORAGE_CONFIG['output_dir']
         ensure_directories()
         

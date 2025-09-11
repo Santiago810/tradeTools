@@ -15,9 +15,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import MARGIN_TRADING_CONFIG
 from utils import setup_logging, ensure_directories, save_data
-from data_fetcher import create_margin_fetcher
-from data_processor import create_margin_processor
-from visualizer import create_margin_visualizer
+from margin.fetcher import create_margin_fetcher
+from margin.processor import create_margin_processor
+from margin.visualizer import create_margin_visualizer
 
 class MarginTradingApp:
     """两融交易查询应用程序"""

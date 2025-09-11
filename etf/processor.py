@@ -8,6 +8,12 @@ import numpy as np
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+import sys
+import os
+
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import MARGIN_TRADING_CONFIG
 from utils import format_number
 

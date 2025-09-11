@@ -11,6 +11,12 @@ from plotly.subplots import make_subplots
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+import sys
+import os
+
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import CHART_CONFIG
 
 class ETFVisualizer:

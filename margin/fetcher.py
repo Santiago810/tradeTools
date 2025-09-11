@@ -1,6 +1,6 @@
 """
-数据获取模块 - A股两融交易查询系统
-支持多数据源：AKShare、TuShare、东方财富网
+两融数据获取模块 - A股两融交易查询系统
+支持获取A股市场的融资融券交易数据
 """
 
 import pandas as pd
@@ -10,6 +10,12 @@ import time
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
+import sys
+import os
+
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import DATA_SOURCES, TUSHARE_TOKEN, MARGIN_TRADING_CONFIG
 from utils import format_date, validate_date_range, load_cached_data, save_cached_data
 

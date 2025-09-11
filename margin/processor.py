@@ -1,14 +1,21 @@
 """
-数据处理模块 - A股两融交易查询系统
-处理两融数据，计算各种占比指标和统计分析
+两融数据处理模块 - A股两融交易查询系统
+处理A股市场的融资融券交易数据
 """
 
 import pandas as pd
 import numpy as np
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
-from utils import calculate_margin_ratio, format_number
+from typing import Dict, List, Optional, Tuple
+import sys
+import os
+
+# 添加当前目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from config import MARGIN_TRADING_CONFIG
+from utils import format_number
 
 class MarginDataProcessor:
     """两融数据处理器"""

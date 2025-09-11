@@ -18,9 +18,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import MARGIN_TRADING_CONFIG
 from utils import setup_logging, ensure_directories, format_number
-from data_fetcher import create_margin_fetcher
-from data_processor import create_margin_processor
-from visualizer import create_margin_visualizer
+from margin.fetcher import create_margin_fetcher
+from margin.processor import create_margin_processor
+from margin.visualizer import create_margin_visualizer
 
 # 页面配置
 st.set_page_config(
@@ -95,9 +95,9 @@ class MarginTradingWebApp:
     
     def __init__(self):
         self._initialize_app()
-        if 'app_initialized' not in st.session_state:
-            st.session_state.app_initialized = True
-            st.session_state.current_page = "main"  # 添加页面状态管理
+        # 初始化页面状态管理
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = "main"
     
     def _initialize_app(self):
         """初始化应用"""
@@ -215,7 +215,7 @@ class MarginTradingWebApp:
                 st.rerun()
         
         # 如果有数据，显示结果
-        if not st.session_state.processed_data.empty:
+        if 'processed_data' in st.session_state and not st.session_state.processed_data.empty:
             # 显示汇总指标
             self.show_summary_metrics()
             
@@ -419,9 +419,9 @@ class MarginTradingWebApp:
         """查询ETF数据"""
         try:
             # 初始化ETF组件
-            from etf_fetcher import create_etf_fetcher
-            from etf_processor import create_etf_processor
-            from etf_visualizer import create_etf_visualizer
+            from etf.fetcher import create_etf_fetcher
+            from etf.processor import create_etf_processor
+            from etf.visualizer import create_etf_visualizer
             
             etf_fetcher = create_etf_fetcher()
             etf_processor = create_etf_processor()
@@ -1016,7 +1016,7 @@ class MarginTradingWebApp:
     def show_etf_charts(self, config, etf_data):
         """显示ETF图表"""
         # 初始化ETF可视化器
-        from etf_visualizer import create_etf_visualizer
+        from etf.visualizer import create_etf_visualizer
         etf_visualizer = create_etf_visualizer()
         
         # 获取数据
