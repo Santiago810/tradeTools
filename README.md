@@ -1,17 +1,65 @@
-# A股两融交易查询系统
+# A股金融数据分析系统
 
-一个功能强大的A股融资融券交易数据查询和分析系统，支持数据获取、处理、分析和可视化。
+一个功能强大的A股金融数据分析系统，支持两融交易和ETF基金数据的查询、处理、分析和可视化。
 
 ## 🌟 主要功能
 
+### 两融交易分析
 - 📊 **数据查询**: 从多个数据源获取A股两融交易数据
 - 📈 **趋势分析**: 计算两融余额变化趋势和技术指标
 - 📉 **占比计算**: 分析融资融券在市场中的占比情况
 - 📋 **报告生成**: 自动生成详细的分析报告
 - 🎨 **数据可视化**: 生成专业的图表和交互式仪表板
-- 💾 **数据导出**: 支持CSV、Excel、JSON等多种格式导出
+
+### ETF基金分析
+- 💰 **资金流向**: 分析ETF基金的净申购赎回情况
+- 📈 **份额变动**: 跟踪ETF基金总份额的变化情况
+- 🏦 **申购赎回**: 监控场外投资者申购和赎回ETF的情况
+- 📊 **实时估值**: 提供ETF的实时估值和价格变化趋势
+- 🔄 **换手率分析**: 分析ETF的交易活跃程度
 
 ## 🚀 快速开始
+
+### 环境准备
+```bash
+# 确保Python 3.8+已安装
+python3 --version
+
+# 进入项目目录
+cd tradeTools
+
+# 安装依赖（如果还没有安装）
+pip3 install -r requirements.txt
+```
+
+### 启动方式
+
+#### 方式一：使用启动脚本（推荐）
+```bash
+python3 run.py
+```
+然后按照菜单提示选择：
+- 选择 `1` - Web界面（推荐新用户）
+- 选择 `2` - 命令行界面
+- 选择 `3` - 安装/更新依赖
+
+#### 方式二：直接启动Web界面
+```bash
+streamlit run app.py
+```
+浏览器将自动打开 `http://localhost:8501`
+
+#### 方式三：命令行界面
+```bash
+# 交互式模式
+python3 main.py --interactive
+
+# 直接查询（查询最近30天）
+python3 main.py
+
+# 指定日期范围查询
+python3 main.py --start 20240101 --end 20240131 --dashboard
+```
 
 ### 环境要求
 
@@ -24,7 +72,7 @@
    ```bash
    # 如果是从git克隆
    git clone [项目地址]
-   cd 两融交易查询
+   cd tradeTools
    
    # 或者直接下载解压到本目录
    ```
@@ -56,34 +104,105 @@
    export TUSHARE_TOKEN=your_token_here
    ```
 
-### 运行方式
+## 📊 Web界面使用流程
 
-#### 方式一：Web界面（推荐）
+1. **启动程序** → 运行 `streamlit run app.py`
+2. **选择模块** → 在首页选择"两融交易查询"或"ETF基金查询"
+3. **设置参数** → 在左侧边栏选择日期范围和其他选项
+4. **开始查询** → 点击"开始查询"按钮
+5. **查看结果** → 浏览数据概览、图表和详细数据
+6. **导出数据** → 在数据表格部分下载CSV文件
 
+## 🔧 功能说明
+
+### 主要功能模块
+
+#### 两融交易分析
+- **数据查询**: 获取指定时间范围的两融交易数据
+- **趋势分析**: 计算变化率、移动平均等技术指标
+- **占比计算**: 分析融资融券在市场中的占比
+- **图表生成**: 生成多种专业分析图表
+- **报告导出**: 生成详细的文字分析报告
+
+#### ETF基金分析
+- **资金流向**: 分析ETF基金的净申购赎回情况
+- **份额变动**: 跟踪ETF基金总份额的变化情况
+- **申购赎回**: 监控场外投资者申购和赎回ETF的情况
+- **实时估值**: 提供ETF的实时估值和价格变化趋势
+- **换手率分析**: 分析ETF的交易活跃程度
+
+### 数据来源
+- **AKShare**: 免费开源金融数据接口（主要）
+- **TuShare**: 专业金融数据接口（需要Token）
+- **东方财富**: 实时行情数据接口
+
+### 输出文件
+程序会在 `output` 目录生成：
+- 数据文件：CSV/Excel/JSON格式
+- 分析报告：TXT格式的详细报告
+- 图表文件：PNG格式的分析图表
+- 交互式仪表板：HTML格式的交互图表
+
+## ⚠️ 注意事项
+
+### 使用建议
+1. **首次使用**: 建议先安装所有依赖包
+2. **查询范围**: 建议单次查询不超过1年数据
+3. **网络要求**: 需要稳定的网络连接获取数据
+4. **存储空间**: 确保有足够的磁盘空间存储结果
+
+### 常见问题
+
+**问题1: 依赖包安装失败**
 ```bash
-streamlit run app.py
+# 解决方案：使用国内镜像源
+pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 ```
 
-然后在浏览器中打开 `http://localhost:8501`
+**问题2: 数据获取失败**
+- 检查网络连接
+- 稍后重试（可能是数据源临时不可用）
+- 尝试不同的日期范围
 
-#### 方式二：命令行界面
+**问题3: 图表显示中文乱码**
+- 系统已配置中文字体支持
+- 如仍有问题，请确保系统安装了中文字体
 
+**问题4: Web界面无法访问**
 ```bash
-# 交互式模式
-python main.py --interactive
+# 确保Streamlit正确安装
+pip3 install streamlit
 
-# 直接查询（查询最近30天数据）
-python main.py
-
-# 指定日期范围
-python main.py --start 20240101 --end 20240131
-
-# 生成交互式仪表板
-python main.py --start 20240101 --end 20240131 --dashboard
-
-# 查看所有选项
-python main.py --help
+# 手动指定端口
+streamlit run app.py --server.port 8501
 ```
+
+## 📈 使用示例
+
+### 示例1: 查询两融交易数据
+```bash
+python3 main.py --start 20241201 --end 20241231 --format excel --dashboard
+```
+
+### 示例2: 仅生成数据文件
+```bash
+python3 main.py --start 20241101 --end 20241130 --no-charts
+```
+
+### 示例3: Web界面快速查询
+1. 启动：`streamlit run app.py`
+2. 选择"两融交易查询"模块
+3. 设置日期范围：2024-12-01 到 2024-12-31
+4. 点击"开始查询"
+5. 查看结果并下载数据
+
+### 示例4: ETF基金查询
+1. 启动：`streamlit run app.py`
+2. 选择"ETF基金查询"模块
+3. 输入ETF代码（如510310）
+4. 设置日期范围
+5. 点击"开始查询"
+6. 查看资金流向、份额变动等分析结果
 
 ## 📖 详细使用说明
 
@@ -94,21 +213,25 @@ python main.py --help
    streamlit run app.py
    ```
 
-2. **设置查询参数**
+2. **选择分析模块**
+   - 首页有两个主要功能模块：两融交易查询和ETF基金查询
+   - 点击相应按钮进入对应分析界面
+
+3. **设置查询参数**
    - 在左侧边栏选择开始和结束日期
    - 选择是否使用缓存（推荐开启）
    - 选择导出格式和图表选项
 
-3. **执行查询**
+4. **执行查询**
    - 点击"开始查询"按钮
    - 等待数据获取和处理完成
 
-4. **查看结果**
+5. **查看结果**
    - 查看数据概览和关键指标
    - 浏览各种分析图表
    - 在详细数据区域查看原始数据
 
-5. **导出数据**
+6. **导出数据**
    - 在数据表格部分点击下载按钮
    - 选择需要的列进行导出
 
@@ -210,27 +333,35 @@ MARGIN_TRADING_CONFIG = {
 ## 🛠️ 项目结构
 
 ```
-两融交易查询/
+tradeTools/
 ├── main.py                 # 命令行主程序
 ├── app.py                  # Web界面程序
 ├── config.py               # 配置文件
 ├── utils.py                # 工具函数
-├── data_fetcher.py         # 数据获取模块
-├── data_processor.py       # 数据处理模块
-├── visualizer.py           # 数据可视化模块
 ├── requirements.txt        # 依赖清单
 ├── README.md              # 使用说明
+├── run.py                 # 启动脚本
 ├── data/                  # 数据缓存目录
 ├── output/                # 输出文件目录
 ├── logs/                  # 日志文件目录
-└── temp/                  # 临时文件目录
+├── temp/                  # 临时文件目录
+├── margin/                # 两融交易模块
+│   ├── __init__.py        # 模块初始化文件
+│   ├── fetcher.py         # 数据获取模块
+│   ├── processor.py       # 数据处理模块
+│   └── visualizer.py      # 数据可视化模块
+└── etf/                   # ETF基金模块
+    ├── __init__.py        # 模块初始化文件
+    ├── fetcher.py         # 数据获取模块
+    ├── processor.py       # 数据处理模块
+    └── visualizer.py      # 数据可视化模块
 ```
 
 ## 🔧 高级配置
 
 ### 自定义数据源
 
-可以在 `data_fetcher.py` 中添加新的数据源：
+可以在 `margin/fetcher.py` 或 `etf/fetcher.py` 中添加新的数据源：
 
 ```python
 def _get_custom_data_source(self, start_date, end_date):
@@ -241,7 +372,7 @@ def _get_custom_data_source(self, start_date, end_date):
 
 ### 自定义指标计算
 
-可以在 `data_processor.py` 中添加新的技术指标：
+可以在 `margin/processor.py` 或 `etf/processor.py` 中添加新的技术指标：
 
 ```python
 def _calculate_custom_indicator(self, df):
@@ -252,7 +383,7 @@ def _calculate_custom_indicator(self, df):
 
 ### 自定义可视化
 
-可以在 `visualizer.py` 中添加新的图表类型：
+可以在 `margin/visualizer.py` 或 `etf/visualizer.py` 中添加新的图表类型：
 
 ```python
 def create_custom_chart(self, df):
@@ -299,13 +430,22 @@ def create_custom_chart(self, df):
    - 检查数据完整性
    - 更新相关依赖包
 
+## 🆘 技术支持
+
+如果遇到问题：
+
+1. **检查依赖**: 运行 `python3 test_basic_functionality.py`
+2. **查看日志**: 检查 `logs` 目录中的日志文件
+3. **重新安装**: 删除虚拟环境重新安装依赖
+4. **联系支持**: 创建Issue描述问题
+
 ## 📈 示例用法
 
 ### 基础查询示例
 
 ```python
-from data_fetcher import create_margin_fetcher
-from data_processor import create_margin_processor
+from margin.fetcher import create_margin_fetcher
+from margin.processor import create_margin_processor
 
 # 创建实例
 fetcher = create_margin_fetcher()
@@ -325,7 +465,7 @@ print(report)
 ### 可视化示例
 
 ```python
-from visualizer import create_margin_visualizer
+from margin.visualizer import create_margin_visualizer
 
 # 创建可视化器
 visualizer = create_margin_visualizer()
@@ -350,22 +490,13 @@ dashboard = visualizer.create_interactive_dashboard(processed_data)
 
 本项目采用 MIT 许可证 - 查看 LICENSE 文件了解详情
 
-## 📞 支持
+## 📝 版本信息
 
-如果您遇到问题或有建议，请：
-
-1. 查看本文档的常见问题部分
-2. 查看项目的 Issues 页面
-3. 创建新的 Issue 描述问题
-
-## 🔄 更新日志
-
-### v1.0.0 (2025-09-05)
-- 初始版本发布
-- 支持多数据源查询
-- 实现基础分析功能
-- 提供Web和命令行界面
+- **当前版本**: v1.0.0
+- **Python要求**: 3.8+
+- **主要依赖**: pandas, numpy, matplotlib, streamlit, akshare
+- **最后更新**: 2025-09-11
 
 ---
 
-**注意**: 本项目仅用于学习和研究目的，不构成投资建议。投资有风险，决策需谨慎。
+**免责声明**: 本工具仅用于数据分析和学习目的，不构成投资建议。投资有风险，决策需谨慎。
