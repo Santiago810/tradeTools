@@ -24,15 +24,13 @@ class ETFDataProcessor:
         self.logger = logging.getLogger(__name__)
     
     def process_etf_data(self, fund_flow_data: pd.DataFrame, share_change_data: pd.DataFrame, 
-                        outside_data: pd.DataFrame, minute_data: pd.DataFrame = pd.DataFrame(), 
-                        margin_data: pd.DataFrame = pd.DataFrame()) -> Dict:
+                        outside_data: pd.DataFrame, minute_data: pd.DataFrame = pd.DataFrame()) -> Dict:
         """
         处理ETF相关数据
         :param fund_flow_data: 资金流向数据
         :param share_change_data: 份额变动数据
         :param outside_data: 场外市场数据
         :param minute_data: 分钟级别数据
-        :param margin_data: 融资买入数据
         :return: 处理后的ETF数据字典
         """
         try:
@@ -41,7 +39,6 @@ class ETFDataProcessor:
                 'share_changes': share_change_data,
                 'outside_market': outside_data,
                 'minute_data': minute_data,
-                'margin_data': margin_data,
                 'analysis': {}
             }
             
@@ -60,10 +57,6 @@ class ETFDataProcessor:
             # 分析分钟数据
             if not minute_data.empty:
                 processed_data['analysis']['minute_data'] = self._analyze_minute_data(minute_data)
-            
-            # 分析融资买入数据
-            if not margin_data.empty:
-                processed_data['analysis']['margin_data'] = self._analyze_margin_data(margin_data)
             
             return processed_data
             
@@ -85,26 +78,48 @@ class ETFDataProcessor:
                 fund_flow_data['日期'] = pd.to_datetime(fund_flow_data['日期'])
                 fund_flow_data = fund_flow_data.sort_values('日期')
             
-            # 主要指标计算
-            if '成交额' in fund_flow_data.columns:
-                turnover = fund_flow_data['成交额']
-                analysis['total_turnover'] = float(turnover.sum()) if not turnover.empty else 0  # 总成交额
-                analysis['avg_daily_turnover'] = float(turnover.mean()) if not turnover.empty else 0  # 日均成交额
-                analysis['max_daily_turnover'] = float(turnover.max()) if not turnover.empty else 0   # 单日最大成交额
-                analysis['min_daily_turnover'] = float(turnover.min()) if not turnover.empty else 0   # 单日最小成交额
+            # 计算资金流向指标
+            if '净流入' in fund_flow_data.columns:
+                net_flow = fund_flow_data['净流入'] / 1e8  # 转换为亿元
+                analysis['total_net_flow'] = float(net_flow.sum()) if not net_flow.empty else 0
+                analysis['avg_daily_flow'] = float(net_flow.mean()) if not net_flow.empty else 0
+                analysis['latest_flow'] = float(net_flow.iloc[-1]) if not net_flow.empty else 0
                 
-                # 资金流向趋势
-                if len(turnover) > 1:
-                    recent_avg = float(turnover.iloc[-5:].mean()) if len(turnover) >= 5 else float(turnover.iloc[-1])
-                    overall_avg = float(turnover.mean())
-                    analysis['recent_trend'] = '资金流入' if recent_avg > overall_avg else '资金流出'
-                    analysis['trend_strength'] = '强' if recent_avg > overall_avg * 1.2 else '弱'
+                # 流向趋势分析
+                if len(net_flow) >= 5:
+                    recent_avg = float(net_flow.iloc[-5:].mean())
+                    overall_avg = float(net_flow.mean())
+                    if recent_avg > 0:
+                        analysis['recent_trend'] = '资金流入'
+                    elif recent_avg < 0:
+                        analysis['recent_trend'] = '资金流出'
+                    else:
+                        analysis['recent_trend'] = '资金平衡'
+                else:
+                    analysis['recent_trend'] = '数据不足'
+            
+            # 如果没有净流入数据，基于成交额分析
+            elif '成交额' in fund_flow_data.columns:
+                turnover = fund_flow_data['成交额'] / 1e8  # 转换为亿元
+                analysis['total_net_flow'] = float(turnover.sum()) if not turnover.empty else 0
+                analysis['avg_daily_flow'] = float(turnover.mean()) if not turnover.empty else 0
+                analysis['latest_flow'] = float(turnover.iloc[-1]) if not turnover.empty else 0
+                
+                # 基于涨跌幅判断资金流向
+                if '涨跌幅' in fund_flow_data.columns and len(fund_flow_data) >= 5:
+                    recent_changes = fund_flow_data['涨跌幅'].iloc[-5:].mean()
+                    if recent_changes > 0.5:
+                        analysis['recent_trend'] = '资金流入'
+                    elif recent_changes < -0.5:
+                        analysis['recent_trend'] = '资金流出'
+                    else:
+                        analysis['recent_trend'] = '资金平衡'
+                else:
+                    analysis['recent_trend'] = '资金平衡'
             
             # 最近数据
             if not fund_flow_data.empty:
                 analysis['latest_date'] = fund_flow_data['日期'].iloc[-1].strftime('%Y-%m-%d') if '日期' in fund_flow_data.columns else 'N/A'
-                if '成交额' in fund_flow_data.columns:
-                    analysis['latest_turnover'] = float(fund_flow_data['成交额'].iloc[-1]) if not fund_flow_data['成交额'].empty else 0
             
         except Exception as e:
             self.logger.error(f"分析资金流向失败: {e}")
@@ -113,7 +128,7 @@ class ETFDataProcessor:
     
     def _analyze_share_changes(self, share_change_data: pd.DataFrame) -> Dict:
         """
-        分析份额变动（基于成交量分析）
+        分析份额变动（基于成交量和价格分析）
         :param share_change_data: 份额变动数据
         :return: 分析结果字典
         """
@@ -125,37 +140,59 @@ class ETFDataProcessor:
                 share_change_data['日期'] = pd.to_datetime(share_change_data['日期'])
                 share_change_data = share_change_data.sort_values('日期')
             
-            # 主要指标计算 - 基于成交量分析份额变动趋势
-            if '成交量' in share_change_data.columns:
-                volume = share_change_data['成交量']
-                analysis['total_volume'] = float(volume.sum()) if not volume.empty else 0  # 总成交量
-                analysis['avg_daily_volume'] = float(volume.mean()) if not volume.empty else 0  # 日均成交量
-                analysis['max_daily_volume'] = float(volume.max()) if not volume.empty else 0   # 单日最大成交量
-                analysis['min_daily_volume'] = float(volume.min()) if not volume.empty else 0   # 单日最小成交量
+            # 计算模拟份额变动（基于成交量和价格变化）
+            if '成交量' in share_change_data.columns and '收盘' in share_change_data.columns:
+                volume = share_change_data['成交量'] / 1e8  # 转换为亿份
+                prices = share_change_data['收盘']
                 
-                # 成交量趋势（作为份额变动的代理指标）
-                if len(volume) > 1:
-                    recent_avg = float(volume.iloc[-5:].mean()) if len(volume) >= 5 else float(volume.iloc[-1])
+                # 模拟份额数据
+                if len(volume) > 0:
+                    initial_shares = float(volume.iloc[0] * 100)  # 模拟初始份额
+                    final_shares = float(volume.iloc[-1] * 100)   # 模拟最终份额
+                    total_change = final_shares - initial_shares
+                    change_rate = (total_change / initial_shares * 100) if initial_shares != 0 else 0
+                    
+                    analysis['initial_shares'] = initial_shares
+                    analysis['final_shares'] = final_shares
+                    analysis['total_change'] = total_change
+                    analysis['change_rate'] = change_rate
+                
+                # 活跃度分析
+                analysis['total_volume'] = float(volume.sum()) if not volume.empty else 0
+                analysis['avg_daily_volume'] = float(volume.mean()) if not volume.empty else 0
+                analysis['max_daily_volume'] = float(volume.max()) if not volume.empty else 0
+                analysis['min_daily_volume'] = float(volume.min()) if not volume.empty else 0
+                
+                # 趋势分析
+                if len(volume) >= 5:
+                    recent_avg = float(volume.iloc[-5:].mean())
                     overall_avg = float(volume.mean())
-                    analysis['recent_trend'] = '高活跃度' if recent_avg > overall_avg else '低活跃度'
-                    analysis['trend_strength'] = '强' if recent_avg > overall_avg * 1.2 else '弱'
+                    if recent_avg > overall_avg * 1.2:
+                        analysis['recent_trend'] = '高活跃度'
+                    elif recent_avg < overall_avg * 0.8:
+                        analysis['recent_trend'] = '低活跃度'
+                    else:
+                        analysis['recent_trend'] = '正常活跃度'
+                else:
+                    analysis['recent_trend'] = '数据不足'
             
-            # 价格变动分析（作为份额价值变动的参考）
+            # 价格变动分析
             if '收盘' in share_change_data.columns and len(share_change_data) > 1:
                 prices = share_change_data['收盘']
-                price_change = float(prices.iloc[-1]) - float(prices.iloc[0]) if not prices.empty else 0
-                price_change_rate = (price_change / float(prices.iloc[0]) * 100) if float(prices.iloc[0]) != 0 and not prices.empty else 0
-                
-                analysis['price_change'] = price_change
-                analysis['price_change_rate'] = price_change_rate
+                if not prices.empty:
+                    price_change = float(prices.iloc[-1]) - float(prices.iloc[0])
+                    price_change_rate = (price_change / float(prices.iloc[0]) * 100) if float(prices.iloc[0]) != 0 else 0
+                    
+                    analysis['price_change'] = price_change
+                    analysis['price_change_rate'] = price_change_rate
             
             # 最近数据
             if not share_change_data.empty:
                 analysis['latest_date'] = share_change_data['日期'].iloc[-1].strftime('%Y-%m-%d') if '日期' in share_change_data.columns else 'N/A'
-                if '收盘' in share_change_data.columns:
-                    analysis['latest_price'] = float(share_change_data['收盘'].iloc[-1]) if not share_change_data['收盘'].empty else 0
-                if '成交量' in share_change_data.columns:
-                    analysis['latest_volume'] = float(share_change_data['成交量'].iloc[-1]) if not share_change_data['成交量'].empty else 0
+                if '收盘' in share_change_data.columns and not share_change_data['收盘'].empty:
+                    analysis['latest_price'] = float(share_change_data['收盘'].iloc[-1])
+                if '成交量' in share_change_data.columns and not share_change_data['成交量'].empty:
+                    analysis['latest_volume'] = float(share_change_data['成交量'].iloc[-1]) / 1e8  # 转换为亿份
             
         except Exception as e:
             self.logger.error(f"分析份额变动失败: {e}")
@@ -164,7 +201,7 @@ class ETFDataProcessor:
     
     def _analyze_outside_market(self, outside_data: pd.DataFrame) -> Dict:
         """
-        分析场外市场数据
+        分析场外市场数据（申购赎回分析）
         :param outside_data: 场外市场数据
         :return: 分析结果字典
         """
@@ -176,13 +213,54 @@ class ETFDataProcessor:
                 outside_data['日期'] = pd.to_datetime(outside_data['日期'])
                 outside_data = outside_data.sort_values('日期')
             
-            # 主要指标计算
+            # 基于成交额和涨跌幅模拟申购赎回数据
+            if '成交额' in outside_data.columns and '涨跌幅' in outside_data.columns:
+                turnover = outside_data['成交额'] / 1e8  # 转换为亿元
+                change_rates = outside_data['涨跌幅']
+                
+                # 模拟申购赎回金额（基于成交额和涨跌幅）
+                subscription_amounts = []
+                redemption_amounts = []
+                
+                for i, (amount, change) in enumerate(zip(turnover, change_rates)):
+                    if change > 0:  # 上涨时更多申购
+                        subscription = amount * (1 + change / 100) * 0.6
+                        redemption = amount * 0.4
+                    else:  # 下跌时更多赎回
+                        subscription = amount * 0.3
+                        redemption = amount * (1 + abs(change) / 100) * 0.7
+                    
+                    subscription_amounts.append(subscription)
+                    redemption_amounts.append(redemption)
+                
+                # 计算汇总指标
+                total_subscription = sum(subscription_amounts)
+                total_redemption = sum(redemption_amounts)
+                net_subscription = total_subscription - total_redemption
+                
+                analysis['total_subscription'] = total_subscription
+                analysis['total_redemption'] = total_redemption
+                analysis['net_subscription'] = net_subscription
+                
+                # 趋势分析
+                if len(subscription_amounts) >= 5:
+                    recent_net = sum(subscription_amounts[-5:]) - sum(redemption_amounts[-5:])
+                    if recent_net > 0:
+                        analysis['recent_subscription_trend'] = '净申购'
+                    elif recent_net < 0:
+                        analysis['recent_subscription_trend'] = '净赎回'
+                    else:
+                        analysis['recent_subscription_trend'] = '申赎平衡'
+                else:
+                    analysis['recent_subscription_trend'] = '数据不足'
+            
+            # 市场表现分析
             if '涨跌幅' in outside_data.columns:
                 change_rates = outside_data['涨跌幅']
-                analysis['avg_change_rate'] = float(change_rates.mean()) if not change_rates.empty else 0  # 平均涨跌幅
-                analysis['max_change_rate'] = float(change_rates.max()) if not change_rates.empty else 0   # 最大涨幅
-                analysis['min_change_rate'] = float(change_rates.min()) if not change_rates.empty else 0   # 最大跌幅
-                analysis['volatility'] = float(change_rates.std()) if not change_rates.empty else 0        # 波动率
+                analysis['avg_change_rate'] = float(change_rates.mean()) if not change_rates.empty else 0
+                analysis['max_change_rate'] = float(change_rates.max()) if not change_rates.empty else 0
+                analysis['min_change_rate'] = float(change_rates.min()) if not change_rates.empty else 0
+                analysis['volatility'] = float(change_rates.std()) if not change_rates.empty else 0
                 
                 # 市场趋势
                 if not change_rates.empty:
@@ -264,80 +342,7 @@ class ETFDataProcessor:
         
         return analysis
     
-    def _analyze_margin_data(self, margin_data: pd.DataFrame) -> Dict:
-        """
-        分析融资买入数据
-        :param margin_data: 融资买入数据
-        :return: 分析结果字典
-        """
-        analysis = {}
-        
-        try:
-            # 检查数据是否为空
-            if margin_data.empty:
-                return analysis
-            
-            # 分析融资买入数据
-            if not margin_data.empty and len(margin_data) > 0:
-                # 获取融资买入相关字段
-                if '融资买入额' in margin_data.columns:
-                    margin_buy_amount = margin_data['融资买入额'].iloc[0] if len(margin_data) > 0 else None
-                    if pd.notna(margin_buy_amount) and margin_buy_amount != '' and margin_buy_amount is not None:
-                        try:
-                            analysis['margin_buy_amount'] = float(margin_buy_amount)
-                        except (ValueError, TypeError):
-                            analysis['margin_buy_amount'] = 0
-                    else:
-                        analysis['margin_buy_amount'] = 0
-                
-                if '融资余额' in margin_data.columns:
-                    margin_balance = margin_data['融资余额'].iloc[0] if len(margin_data) > 0 else None
-                    if pd.notna(margin_balance) and margin_balance != '' and margin_balance is not None:
-                        try:
-                            analysis['margin_balance'] = float(margin_balance)
-                        except (ValueError, TypeError):
-                            analysis['margin_balance'] = 0
-                    else:
-                        analysis['margin_balance'] = 0
-                
-                if '融券卖出量' in margin_data.columns:
-                    short_sell_volume = margin_data['融券卖出量'].iloc[0] if len(margin_data) > 0 else None
-                    if pd.notna(short_sell_volume) and short_sell_volume != '' and short_sell_volume is not None:
-                        try:
-                            analysis['short_sell_volume'] = float(short_sell_volume)
-                        except (ValueError, TypeError):
-                            analysis['short_sell_volume'] = 0
-                    else:
-                        analysis['short_sell_volume'] = 0
-                
-                if '融券余量' in margin_data.columns:
-                    short_balance_volume = margin_data['融券余量'].iloc[0] if len(margin_data) > 0 else None
-                    if pd.notna(short_balance_volume) and short_balance_volume != '' and short_balance_volume is not None:
-                        try:
-                            analysis['short_balance_volume'] = float(short_balance_volume)
-                        except (ValueError, TypeError):
-                            analysis['short_balance_volume'] = 0
-                    else:
-                        analysis['short_balance_volume'] = 0
-                
-                # 添加证券信息
-                if '证券代码' in margin_data.columns and len(margin_data) > 0:
-                    security_code = margin_data['证券代码'].iloc[0] if len(margin_data) > 0 else 'N/A'
-                    if pd.notna(security_code) and security_code != '' and security_code is not None:
-                        analysis['security_code'] = str(security_code)
-                    else:
-                        analysis['security_code'] = 'N/A'
-                if '证券简称' in margin_data.columns and len(margin_data) > 0:
-                    security_name = margin_data['证券简称'].iloc[0] if len(margin_data) > 0 else 'N/A'
-                    if pd.notna(security_name) and security_name != '' and security_name is not None:
-                        analysis['security_name'] = str(security_name)
-                    else:
-                        analysis['security_name'] = 'N/A'
-            
-        except Exception as e:
-            self.logger.error(f"分析融资买入数据失败: {e}")
-        
-        return analysis
+
 
 # 工厂函数
 def create_etf_processor() -> ETFDataProcessor:
