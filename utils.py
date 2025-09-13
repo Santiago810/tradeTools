@@ -158,11 +158,11 @@ def save_data(data: pd.DataFrame, filename: str, format_type: str = 'csv'):
         logging.error(f"保存数据时出错: {e}")
         return None
 
-def load_cached_data(cache_key: str) -> Optional[pd.DataFrame]:
+def load_cached_data(cache_key: str):
     """
     加载缓存数据
     :param cache_key: 缓存键
-    :return: 缓存的DataFrame或None
+    :return: 缓存的数据或None
     """
     cache_dir = STORAGE_CONFIG['temp_dir']
     cache_file = os.path.join(cache_dir, f"{cache_key}.pkl")
@@ -174,17 +174,19 @@ def load_cached_data(cache_key: str) -> Optional[pd.DataFrame]:
             current_time = datetime.now().timestamp()
             
             if current_time - cache_time < 3600:  # 1小时内的缓存有效
-                return pd.read_pickle(cache_file)
+                import pickle
+                with open(cache_file, 'rb') as f:
+                    return pickle.load(f)
         
     except Exception as e:
         logging.error(f"加载缓存数据时出错: {e}")
     
     return None
 
-def save_cached_data(data: pd.DataFrame, cache_key: str):
+def save_cached_data(data, cache_key: str):
     """
     保存数据到缓存
-    :param data: 要缓存的DataFrame
+    :param data: 要缓存的数据（DataFrame或其他对象）
     :param cache_key: 缓存键
     """
     cache_dir = STORAGE_CONFIG['temp_dir']
@@ -192,7 +194,9 @@ def save_cached_data(data: pd.DataFrame, cache_key: str):
     cache_file = os.path.join(cache_dir, f"{cache_key}.pkl")
     
     try:
-        data.to_pickle(cache_file)
+        import pickle
+        with open(cache_file, 'wb') as f:
+            pickle.dump(data, f)
         logging.info(f"数据已缓存到: {cache_file}")
     except Exception as e:
         logging.error(f"保存缓存数据时出错: {e}")

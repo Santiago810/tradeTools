@@ -575,7 +575,7 @@ class MarginTradingWebApp:
             # 获取ETF基本信息
             status_text.text("正在获取ETF基本信息...")
             progress_bar.progress(10)
-            etf_info = etf_fetcher.get_etf_info(config['etf_code'])
+            etf_info = etf_fetcher.get_etf_info(config['etf_code'], use_cache=config['use_cache'])
             
             # 获取ETF资金流向数据
             status_text.text("正在获取ETF资金流向数据...")
@@ -583,7 +583,8 @@ class MarginTradingWebApp:
             fund_flow_data = etf_fetcher.get_etf_fund_flow(
                 config['etf_code'], 
                 config['start_date'], 
-                config['end_date']
+                config['end_date'],
+                use_cache=config['use_cache']
             )
             
             # 获取ETF份额变动数据
@@ -592,7 +593,8 @@ class MarginTradingWebApp:
             share_change_data = etf_fetcher.get_etf_share_changes(
                 config['etf_code'], 
                 config['start_date'], 
-                config['end_date']
+                config['end_date'],
+                use_cache=config['use_cache']
             )
             
             # 获取ETF场外市场数据
@@ -601,13 +603,18 @@ class MarginTradingWebApp:
             outside_data = etf_fetcher.get_etf_outside_market_data(
                 config['etf_code'], 
                 config['start_date'], 
-                config['end_date']
+                config['end_date'],
+                use_cache=config['use_cache']
             )
             
-            # 获取ETF分钟数据
+            # 获取ETF分钟数据（用于换手率分析等，可以缓存）
             status_text.text("正在获取ETF分钟数据...")
             progress_bar.progress(70)
-            minute_data = etf_fetcher.get_etf_minute_data(config['etf_code'])
+            minute_data = etf_fetcher.get_etf_minute_data(
+                config['etf_code'],
+                use_cache=config['use_cache'],
+                for_realtime=False
+            )
             
 
             
@@ -1228,18 +1235,46 @@ class MarginTradingWebApp:
         
         # 实时估值分析标签页
         with tab2:
-            st.subheader("📈 ETF实时估值与价格变化趋势")
-            if not minute_data.empty:
-                realtime_fig = etf_visualizer.create_etf_realtime_valuation_chart(minute_data)
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.subheader("📈 ETF实时估值与价格变化趋势")
+            with col2:
+                refresh_realtime = st.button("🔄 刷新实时数据", help="获取最新的分钟级数据")
+            
+            # 为实时分析获取最新的分钟数据（不使用缓存）
+            if refresh_realtime or 'realtime_minute_data' not in st.session_state:
+                with st.spinner("正在获取最新实时数据..."):
+                    etf_code = etf_data.get('info', {}).get('基金代码', '510310')
+                    
+                    # 创建fetcher获取实时数据
+                    from etf.fetcher import create_etf_fetcher
+                    realtime_fetcher = create_etf_fetcher()
+                    realtime_minute_data = realtime_fetcher.get_etf_minute_data(
+                        etf_code, period="1", use_cache=False, for_realtime=True
+                    )
+                    
+                    # 保存到session state
+                    st.session_state.realtime_minute_data = realtime_minute_data
+            else:
+                realtime_minute_data = st.session_state.realtime_minute_data
+            
+            if not realtime_minute_data.empty:
+                realtime_fig = etf_visualizer.create_etf_realtime_valuation_chart(realtime_minute_data)
                 st.plotly_chart(realtime_fig, width='stretch')
+                
+                # 显示数据更新时间
+                from datetime import datetime
+                current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                st.success(f"✅ 实时数据已更新 - {current_time}")
                 
                 # 添加说明
                 st.info("💡 **图表说明**：\n" +
                        "• **收盘价**：ETF在每个时间点的收盘价格\n" +
                        "• **均价**：作为实时估值的近似值，反映ETF的平均交易价格\n" +
-                       "• 图表显示了ETF在查询当天的价格变化趋势")
+                       "• 图表显示了ETF在查询当天的价格变化趋势\n" +
+                       "• **实时数据**：每次查看此标签页都会获取最新数据，不使用缓存")
             else:
-                st.info("暂无分钟级别数据，无法显示实时估值分析")
+                st.warning("⚠️ 暂无最新分钟级别数据，无法显示实时估值分析")
         
         # 换手率分析标签页
         with tab3:
