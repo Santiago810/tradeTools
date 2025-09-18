@@ -91,6 +91,31 @@ st.markdown("""
         color: #666;
         font-size: 1rem;
     }
+    /* 中国股市颜色习惯 */
+    .positive-value {
+        color: #FF4444 !important;
+        font-weight: bold;
+    }
+    .negative-value {
+        color: #00C851 !important;
+        font-weight: bold;
+    }
+    .neutral-value {
+        color: #666 !important;
+    }
+    /* 数据表格样式 */
+    .stDataFrame {
+        font-size: 0.9rem;
+    }
+    /* 指标卡片样式 */
+    .metric-positive {
+        background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+        border-left: 4px solid #FF4444;
+    }
+    .metric-negative {
+        background: linear-gradient(135deg, #e6ffe6 0%, #ccffcc 100%);
+        border-left: 4px solid #00C851;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,6 +127,66 @@ class MarginTradingWebApp:
         # 初始化页面状态管理
         if 'current_page' not in st.session_state:
             st.session_state.current_page = "main"
+    
+    def _format_value_with_color(self, value: float, is_percentage: bool = False, show_sign: bool = True) -> str:
+        """
+        根据中国股市习惯格式化数值颜色
+        :param value: 数值
+        :param is_percentage: 是否为百分比
+        :param show_sign: 是否显示正负号
+        :return: 带颜色的HTML字符串
+        """
+        if value > 0:
+            color_class = "positive-value"
+            sign = "+" if show_sign else ""
+        elif value < 0:
+            color_class = "negative-value"
+            sign = ""
+        else:
+            color_class = "neutral-value"
+            sign = ""
+        
+        if is_percentage:
+            formatted_value = f"{sign}{value:.2f}%"
+        else:
+            formatted_value = f"{sign}{value:.2f}"
+        
+        return f'<span class="{color_class}">{formatted_value}</span>'
+    
+    def _format_money_with_color(self, value: float, unit: str = "亿元") -> str:
+        """
+        格式化资金数值并添加颜色
+        :param value: 资金数值
+        :param unit: 单位
+        :return: 带颜色的HTML字符串
+        """
+        if value > 0:
+            color_class = "positive-value"
+            sign = "+"
+        elif value < 0:
+            color_class = "negative-value"
+            sign = ""
+        else:
+            color_class = "neutral-value"
+            sign = ""
+        
+        formatted_value = f"{sign}{value:.2f}{unit}"
+        return f'<span class="{color_class}">{formatted_value}</span>'
+    
+    def _show_data_source_error(self, error_type: str = "connection"):
+        """
+        显示数据源错误信息
+        :param error_type: 错误类型
+        """
+        if error_type == "connection":
+            st.error("❌ 数据源服务器暂时不可用，请稍后重试")
+            st.info("💡 这通常是临时问题，建议等待10-30分钟后重试")
+        elif error_type == "timeout":
+            st.error("❌ 网络连接超时，请检查网络连接")
+        elif error_type == "empty":
+            st.error("❌ 数据源返回空数据，可能是非交易时间")
+        else:
+            st.error("❌ 数据获取失败，请稍后重试")
     
     def _initialize_app(self):
         """初始化应用"""
@@ -138,6 +223,13 @@ class MarginTradingWebApp:
             if key in st.session_state:
                 st.session_state[key] = pd.DataFrame() if 'data' in key else {}
     
+    def _clear_sector_data(self):
+        """清除板块相关的session state数据"""
+        keys_to_clear = ['sector_data', 'sector_analysis', 'current_sector', 'sector_detail_data']
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+    
     def show_main_page(self):
         """显示主页"""
         st.markdown('<div class="main-header">📊 A股金融数据分析系统</div>', 
@@ -152,7 +244,7 @@ class MarginTradingWebApp:
         """, unsafe_allow_html=True)
         
         # 创建功能卡片布局
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
@@ -163,9 +255,10 @@ class MarginTradingWebApp:
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("进入两融交易查询", type="primary", use_container_width=True):
-                # 清除ETF数据，切换到两融页面
+            if st.button("进入两融交易查询", type="primary", width="stretch"):
+                # 清除其他数据，切换到两融页面
                 self._clear_etf_data()
+                self._clear_sector_data()
                 st.session_state.current_page = "margin"
                 st.rerun()
         
@@ -178,16 +271,33 @@ class MarginTradingWebApp:
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("进入ETF基金查询", type="primary", use_container_width=True):
-                # 清除两融数据，切换到ETF页面
+            if st.button("进入ETF基金查询", type="primary", width="stretch"):
+                # 清除其他数据，切换到ETF页面
                 self._clear_margin_data()
+                self._clear_sector_data()
                 st.session_state.current_page = "etf"
+                st.rerun()
+        
+        with col3:
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">🏢</div>
+                <div class="feature-title">板块资金查询</div>
+                <div class="feature-description">查询和分析中国股市各板块的资金流向情况，包括主力资金、涨跌幅等</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("进入板块资金查询", type="primary", width="stretch"):
+                # 清除其他数据，切换到板块页面
+                self._clear_margin_data()
+                self._clear_etf_data()
+                st.session_state.current_page = "sector"
                 st.rerun()
         
         # 系统介绍
         st.markdown("### 📊 系统功能介绍")
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
@@ -205,6 +315,15 @@ class MarginTradingWebApp:
             - **份额变动**：跟踪ETF基金总份额的变化情况
             - **申购赎回**：监控场外投资者申购和赎回ETF的情况
             - **综合分析**：提供ETF基金的全面数据分析报告
+            """)
+        
+        with col3:
+            st.markdown("""
+            #### 板块资金分析功能
+            - **板块概览**：查看所有板块的资金流向排行榜
+            - **资金流向**：分析各板块主力资金净流入流出情况
+            - **涨跌统计**：统计板块涨跌幅和市场表现
+            - **详细分析**：深入分析单个板块的成分股情况
             """)
         
         st.markdown("### ⚠️ 使用说明")
@@ -326,7 +445,7 @@ class MarginTradingWebApp:
         
         # 查询按钮
         st.sidebar.markdown("---")  # 分隔线
-        query_button = st.sidebar.button("🚀 开始查询", type="primary", use_container_width=True)
+        query_button = st.sidebar.button("🚀 开始查询", type="primary", width="stretch")
         
         config = {
             'etf_code': etf_code,
@@ -427,6 +546,534 @@ class MarginTradingWebApp:
                 else:
                     st.warning("⚠️ 请输入有效的ETF代码")
     
+    def show_sector_page(self):
+        """显示板块资金查询页面"""
+        # 页面标题和返回按钮
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("← 返回主页"):
+                # 清除板块数据
+                self._clear_sector_data()
+                st.session_state.current_page = "main"
+                st.rerun()
+        with col2:
+            st.markdown('<div class="main-header">🏢 板块资金查询</div>', 
+                       unsafe_allow_html=True)
+        
+        # 侧边栏配置
+        st.sidebar.header("🔧 板块查询配置")
+        
+        # 查询模式选择
+        query_mode = st.sidebar.selectbox(
+            "查询模式",
+            ["板块概览", "单板块详情"],
+            help="选择查询所有板块概览或单个板块详情"
+        )
+        
+        # 查询选项
+        st.sidebar.subheader("⚙️ 查询选项")
+        use_cache = st.sidebar.checkbox("使用缓存数据", value=True, 
+                                       help="使用缓存可以加快查询速度")
+        
+        # 显示选项
+        st.sidebar.subheader("📊 显示选项")
+        show_overview_chart = st.sidebar.checkbox("概览图表", value=True)
+        show_ranking_charts = st.sidebar.checkbox("排行榜图表", value=True)
+        show_sentiment_gauge = st.sidebar.checkbox("市场情绪仪表盘", value=True)
+        
+        config = {
+            'query_mode': query_mode,
+            'use_cache': use_cache,
+            'show_overview_chart': show_overview_chart,
+            'show_ranking_charts': show_ranking_charts,
+            'show_sentiment_gauge': show_sentiment_gauge
+        }
+        
+        if query_mode == "板块概览":
+            # 板块概览模式
+            st.sidebar.markdown("---")
+            query_button = st.sidebar.button("🚀 查询所有板块", type="primary", width="stretch")
+            
+            if query_button:
+                with st.spinner("正在查询板块数据..."):
+                    success = self.query_sector_overview(config)
+            
+            # 显示板块概览结果
+            if 'sector_data' in st.session_state and st.session_state.sector_data:
+                self.show_sector_overview_results(config)
+            else:
+                # 显示使用提示
+                with st.expander("💡 使用提示", expanded=True):
+                    st.markdown("""
+                    ### 板块资金查询功能说明：
+                    
+                    #### 📊 板块概览模式
+                    - 查询所有板块的资金流向排行榜
+                    - 显示主力资金净流入/流出情况
+                    - 分析板块涨跌幅和市场表现
+                    - 提供市场情绪分析
+                    
+                    #### 🔍 单板块详情模式  
+                    - 输入具体板块名称查询详细信息
+                    - 显示板块内成分股的资金流向
+                    - 分析板块强度和龙头效应
+                    - 提供个股排行榜
+                    
+                    #### 📈 数据说明
+                    - **主力资金**：超大单+大单净流入金额
+                    - **涨跌幅**：板块平均涨跌幅
+                    - **换手率**：板块平均换手率
+                    - **量比**：当日成交量与近期平均成交量的比值
+                    
+                    #### ⚠️ 重要提醒
+                    - 所有数据均为真实市场数据，不提供模拟数据
+                    - 数据获取失败时会明确提示，请勿基于错误信息做投资决策
+                    - 建议在网络稳定的环境下使用
+                    
+                    点击"查询所有板块"开始使用！
+                    """)
+        
+        else:
+            # 单板块详情模式
+            sector_input = st.sidebar.text_input(
+                "板块名称", 
+                value="", 
+                placeholder="例如：半导体、新能源汽车、医药生物",
+                help="输入要查询的板块名称"
+            )
+            
+            st.sidebar.markdown("---")
+            detail_query_button = st.sidebar.button("🔍 查询板块详情", type="primary", width="stretch")
+            
+            if detail_query_button and sector_input:
+                with st.spinner(f"正在查询板块 {sector_input} 的详细数据..."):
+                    success = self.query_sector_detail(sector_input, config)
+                    if not success:
+                        st.error("❌ 数据获取失败，请检查网络连接或稍后重试")
+            
+            # 显示板块详情结果
+            if 'sector_detail_data' in st.session_state and st.session_state.sector_detail_data:
+                self.show_sector_detail_results(config)
+            else:
+                if sector_input:
+                    st.info(f"💡 请点击'查询板块详情'获取板块 {sector_input} 的数据")
+                else:
+                    st.info("💡 请在左侧输入板块名称，然后点击查询")
+                
+                # 显示常用板块名称
+                with st.expander("📋 常用板块名称参考", expanded=True):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.markdown("""
+                        **科技板块**
+                        - 半导体
+                        - 人工智能
+                        - 5G概念
+                        - 云计算
+                        - 大数据
+                        """)
+                    
+                    with col2:
+                        st.markdown("""
+                        **新兴产业**
+                        - 新能源汽车
+                        - 光伏概念
+                        - 风电
+                        - 储能
+                        - 锂电池
+                        """)
+                    
+                    with col3:
+                        st.markdown("""
+                        **传统行业**
+                        - 医药生物
+                        - 白酒
+                        - 房地产
+                        - 银行
+                        - 保险
+                        """)
+    
+    def query_sector_overview(self, config: dict) -> bool:
+        """查询板块概览数据"""
+        try:
+            # 初始化板块组件
+            from sector.fetcher import create_sector_fetcher
+            from sector.processor import create_sector_processor
+            
+            sector_fetcher = create_sector_fetcher()
+            sector_processor = create_sector_processor()
+            
+            # 创建进度条
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # 获取板块资金流向数据
+            status_text.text("正在获取板块资金流向数据...")
+            progress_bar.progress(50)
+            
+            sector_data = sector_fetcher.get_sector_fund_flow(use_cache=config['use_cache'])
+            
+            if sector_data.empty:
+                progress_bar.empty()
+                status_text.empty()
+                self._show_data_source_error("connection")
+                return False
+            
+            # 处理数据
+            status_text.text("正在处理板块数据...")
+            progress_bar.progress(80)
+            
+            processed_data = sector_processor.process_sector_data(sector_data)
+            
+            # 保存到session state
+            st.session_state.sector_data = processed_data
+            
+            # 完成
+            progress_bar.progress(100)
+            status_text.text("数据处理完成！")
+            
+            # 清除进度条和状态文本
+            progress_bar.empty()
+            status_text.empty()
+            
+            st.success(f"✅ 成功获取并处理了 {len(sector_data)} 个板块的数据")
+            return True
+            
+        except Exception as e:
+            st.error(f"❌ 板块概览查询失败: {str(e)}")
+            return False
+    
+    def query_sector_detail(self, sector_name: str, config: dict) -> bool:
+        """查询单个板块详细数据"""
+        try:
+            # 初始化板块组件
+            from sector.fetcher import create_sector_fetcher
+            from sector.processor import create_sector_processor
+            
+            sector_fetcher = create_sector_fetcher()
+            sector_processor = create_sector_processor()
+            
+            # 创建进度条
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # 获取板块详细数据
+            status_text.text(f"正在获取板块 {sector_name} 的详细数据...")
+            progress_bar.progress(50)
+            
+            detail_data = sector_fetcher.get_sector_detail(sector_name, use_cache=config['use_cache'])
+            
+            if detail_data.empty:
+                progress_bar.empty()
+                status_text.empty()
+                self._show_data_source_error("connection")
+                return False
+            
+            # 处理数据
+            status_text.text("正在分析板块数据...")
+            progress_bar.progress(80)
+            
+            analysis_result = sector_processor.analyze_sector_detail(sector_name, detail_data)
+            
+            # 保存到session state
+            st.session_state.sector_detail_data = analysis_result
+            st.session_state.current_sector = sector_name
+            
+            # 完成
+            progress_bar.progress(100)
+            status_text.text("数据处理完成！")
+            
+            # 清除进度条和状态文本
+            progress_bar.empty()
+            status_text.empty()
+            
+            st.success(f"✅ 成功获取并分析了板块 {sector_name} 的 {len(detail_data)} 只成分股数据")
+            return True
+            
+        except Exception as e:
+            st.error(f"❌ 板块 {sector_name} 详情查询失败: {str(e)}")
+            return False
+    
+    def show_sector_overview_results(self, config: dict):
+        """显示板块概览结果"""
+        if not st.session_state.sector_data:
+            return
+        
+        processed_data = st.session_state.sector_data
+        
+        # 显示汇总指标
+        if 'summary' in processed_data:
+            st.subheader("📊 板块市场概览")
+            summary = processed_data['summary']
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    label="📈 总板块数",
+                    value=summary.get('总板块数', 0)
+                )
+            
+            with col2:
+                st.metric(
+                    label="💰 资金净流入板块",
+                    value=summary.get('资金净流入板块', 0),
+                    delta=summary.get('资金流入占比', '0%')
+                )
+            
+            with col3:
+                st.metric(
+                    label="📊 上涨板块",
+                    value=summary.get('上涨板块', 0),
+                    delta=summary.get('上涨占比', '0%')
+                )
+            
+            with col4:
+                st.metric(
+                    label="💵 总资金净流入",
+                    value=summary.get('总资金净流入', '0.00亿元')
+                )
+        
+        # 显示市场情绪
+        if 'market_sentiment' in processed_data and config['show_sentiment_gauge']:
+            st.subheader("🌡️ 市场情绪分析")
+            sentiment = processed_data['market_sentiment']
+            
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                # 显示情绪指标
+                for key, value in sentiment.items():
+                    if key != '情绪评分':
+                        # 根据指标类型添加颜色
+                        if key in ['上涨比例', '资金流入比例'] and '%' in str(value):
+                            # 提取百分比数值
+                            try:
+                                pct_value = float(str(value).replace('%', ''))
+                                colored_value = self._format_value_with_color(pct_value - 50, True, False)  # 以50%为基准
+                                st.markdown(f"**{key}**: {colored_value}", unsafe_allow_html=True)
+                            except:
+                                st.metric(label=key, value=value)
+                        elif key == '平均涨跌幅' and '%' in str(value):
+                            try:
+                                pct_value = float(str(value).replace('%', ''))
+                                colored_value = self._format_value_with_color(pct_value, True)
+                                st.markdown(f"**{key}**: {colored_value}", unsafe_allow_html=True)
+                            except:
+                                st.metric(label=key, value=value)
+                        else:
+                            st.metric(label=key, value=value)
+            
+            with col2:
+                # 显示情绪仪表盘
+                if config['show_sentiment_gauge']:
+                    from sector.visualizer import create_sector_visualizer
+                    visualizer = create_sector_visualizer()
+                    gauge_chart = visualizer.create_market_sentiment_gauge(processed_data)
+                    if gauge_chart:
+                        st.plotly_chart(gauge_chart, width="stretch")
+        
+        # 显示概览图表
+        if config['show_overview_chart']:
+            st.subheader("📈 板块资金流向概览")
+            from sector.visualizer import create_sector_visualizer
+            visualizer = create_sector_visualizer()
+            overview_chart = visualizer.create_sector_overview_chart(processed_data)
+            if overview_chart:
+                st.plotly_chart(overview_chart, width="stretch")
+        
+        # 显示排行榜
+        if 'rankings' in processed_data:
+            st.subheader("🏆 板块排行榜")
+            
+            # 排行榜选项卡
+            tab1, tab2, tab3, tab4 = st.tabs(["💰 资金流入榜", "📉 资金流出榜", "📈 涨幅榜", "📊 跌幅榜"])
+            
+            with tab1:
+                if config['show_ranking_charts']:
+                    from sector.visualizer import create_sector_visualizer
+                    visualizer = create_sector_visualizer()
+                    inflow_chart = visualizer.create_sector_ranking_chart(processed_data, 'inflow')
+                    if inflow_chart:
+                        st.plotly_chart(inflow_chart, width="stretch")
+                
+                # 显示数据表格
+                inflow_data = processed_data['rankings'].get('资金流入榜', [])
+                if inflow_data:
+                    df = pd.DataFrame(inflow_data)
+                    # 格式化数据表格
+                    df_display = df.copy()
+                    if '主力资金' in df_display.columns:
+                        df_display['主力资金'] = df_display['主力资金'].apply(lambda x: f"+{x:.2f}亿" if x > 0 else f"{x:.2f}亿")
+                    if '涨跌幅' in df_display.columns:
+                        df_display['涨跌幅'] = df_display['涨跌幅'].apply(lambda x: f"+{x:.2f}%" if x > 0 else f"{x:.2f}%")
+                    st.dataframe(df_display, width="stretch")
+            
+            with tab2:
+                if config['show_ranking_charts']:
+                    from sector.visualizer import create_sector_visualizer
+                    visualizer = create_sector_visualizer()
+                    outflow_chart = visualizer.create_sector_ranking_chart(processed_data, 'outflow')
+                    if outflow_chart:
+                        st.plotly_chart(outflow_chart, width="stretch")
+                
+                # 显示数据表格
+                outflow_data = processed_data['rankings'].get('资金流出榜', [])
+                if outflow_data:
+                    df = pd.DataFrame(outflow_data)
+                    # 格式化数据表格
+                    df_display = df.copy()
+                    if '主力资金' in df_display.columns:
+                        df_display['主力资金'] = df_display['主力资金'].apply(lambda x: f"+{x:.2f}亿" if x > 0 else f"{x:.2f}亿")
+                    if '涨跌幅' in df_display.columns:
+                        df_display['涨跌幅'] = df_display['涨跌幅'].apply(lambda x: f"+{x:.2f}%" if x > 0 else f"{x:.2f}%")
+                    st.dataframe(df_display, width="stretch")
+            
+            with tab3:
+                if config['show_ranking_charts']:
+                    from sector.visualizer import create_sector_visualizer
+                    visualizer = create_sector_visualizer()
+                    rising_chart = visualizer.create_sector_ranking_chart(processed_data, 'rising')
+                    if rising_chart:
+                        st.plotly_chart(rising_chart, width="stretch")
+                
+                # 显示数据表格
+                rising_data = processed_data['rankings'].get('涨幅榜', [])
+                if rising_data:
+                    df = pd.DataFrame(rising_data)
+                    # 格式化数据表格
+                    df_display = df.copy()
+                    if '主力资金' in df_display.columns:
+                        df_display['主力资金'] = df_display['主力资金'].apply(lambda x: f"+{x:.2f}亿" if x > 0 else f"{x:.2f}亿")
+                    if '涨跌幅' in df_display.columns:
+                        df_display['涨跌幅'] = df_display['涨跌幅'].apply(lambda x: f"+{x:.2f}%" if x > 0 else f"{x:.2f}%")
+                    st.dataframe(df_display, width="stretch")
+            
+            with tab4:
+                if config['show_ranking_charts']:
+                    from sector.visualizer import create_sector_visualizer
+                    visualizer = create_sector_visualizer()
+                    falling_chart = visualizer.create_sector_ranking_chart(processed_data, 'falling')
+                    if falling_chart:
+                        st.plotly_chart(falling_chart, width="stretch")
+                
+                # 显示数据表格
+                falling_data = processed_data['rankings'].get('跌幅榜', [])
+                if falling_data:
+                    df = pd.DataFrame(falling_data)
+                    st.dataframe(df, width="stretch")
+        
+        # 显示详细数据表格
+        with st.expander("📋 查看所有板块详细数据", expanded=False):
+            if 'raw_data' in processed_data:
+                st.dataframe(processed_data['raw_data'], width="stretch")
+    
+    def show_sector_detail_results(self, config: dict):
+        """显示板块详情结果"""
+        if not st.session_state.sector_detail_data:
+            return
+        
+        detail_data = st.session_state.sector_detail_data
+        sector_name = detail_data.get('sector_name', '未知板块')
+        
+        # 显示板块基本信息
+        st.subheader(f"🏢 {sector_name} 详细分析")
+        
+        # 显示汇总指标
+        if 'summary' in detail_data:
+            summary = detail_data['summary']
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    label="📊 成分股数量",
+                    value=summary.get('成分股数量', 0)
+                )
+            
+            with col2:
+                st.metric(
+                    label="💰 板块总资金净流入",
+                    value=summary.get('板块总资金净流入', '0.00万元')
+                )
+            
+            with col3:
+                st.metric(
+                    label="📈 平均涨跌幅",
+                    value=summary.get('平均涨跌幅', '0.00%')
+                )
+            
+            with col4:
+                st.metric(
+                    label="📊 上涨比例",
+                    value=summary.get('上涨比例', '0.0%')
+                )
+        
+        # 显示板块强度分析
+        if 'strength_analysis' in detail_data:
+            st.subheader("💪 板块强度分析")
+            strength = detail_data['strength_analysis']
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    label="🏆 板块强度",
+                    value=strength.get('板块强度', 'N/A')
+                )
+            
+            with col2:
+                st.metric(
+                    label="🚀 涨停股数量",
+                    value=strength.get('涨停股数量', 0)
+                )
+            
+            with col3:
+                st.metric(
+                    label="🎯 龙头效应",
+                    value=strength.get('龙头效应', 'N/A')
+                )
+        
+        # 显示详细图表
+        st.subheader("📈 板块详细分析图表")
+        from sector.visualizer import create_sector_visualizer
+        visualizer = create_sector_visualizer()
+        detail_chart = visualizer.create_sector_detail_chart(detail_data)
+        if detail_chart:
+            st.plotly_chart(detail_chart, width="stretch")
+        
+        # 显示个股排行榜
+        if 'stock_rankings' in detail_data:
+            st.subheader("🏆 成分股排行榜")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 💰 资金流入榜")
+                inflow_stocks = detail_data['stock_rankings'].get('资金流入榜', [])
+                if inflow_stocks:
+                    df = pd.DataFrame(inflow_stocks)
+                    st.dataframe(df, width="stretch")
+                else:
+                    st.info("暂无资金流入数据")
+            
+            with col2:
+                st.markdown("#### 📉 资金流出榜")
+                outflow_stocks = detail_data['stock_rankings'].get('资金流出榜', [])
+                if outflow_stocks:
+                    df = pd.DataFrame(outflow_stocks)
+                    st.dataframe(df, width="stretch")
+                else:
+                    st.info("暂无资金流出数据")
+        
+        # 显示所有成分股数据
+        with st.expander("📋 查看所有成分股详细数据", expanded=False):
+            if 'raw_data' in detail_data:
+                st.dataframe(detail_data['raw_data'], width="stretch")
+            else:
+                st.info("暂无详细数据")
+    
     def show_margin_sidebar(self):
         """显示两融交易查询侧边栏配置"""
         st.sidebar.header("🔧 查询配置")
@@ -472,7 +1119,7 @@ class MarginTradingWebApp:
         
         # 查询按钮
         st.sidebar.markdown("---")  # 分隔线
-        query_button = st.sidebar.button("🚀 开始查询", type="primary", use_container_width=True)
+        query_button = st.sidebar.button("🚀 开始查询", type="primary", width="stretch")
         
         return {
             'start_date': start_date.strftime('%Y%m%d'),
@@ -1409,6 +2056,8 @@ class MarginTradingWebApp:
             self.show_margin_trading_page()
         elif st.session_state.current_page == "etf":
             self.show_etf_page()
+        elif st.session_state.current_page == "sector":
+            self.show_sector_page()
 
 def main():
     """主函数"""
