@@ -1,10 +1,11 @@
 # A股金融数据分析系统
 
-一个功能强大的A股金融数据分析系统，支持两融交易和ETF基金数据的查询、处理、分析和可视化。
+一个功能强大的A股金融数据分析系统，支持两融交易、ETF基金和板块资金数据的查询、处理、分析和可视化。
 
 ## 🌟 主要功能
 
 ### 两融交易分析
+
 - 📊 **数据查询**: 从多个数据源获取A股两融交易数据
 - 📈 **趋势分析**: 计算两融余额变化趋势和技术指标
 - 📉 **占比计算**: 分析融资融券在市场中的占比情况
@@ -12,15 +13,25 @@
 - 🎨 **数据可视化**: 生成专业的图表和交互式仪表板
 
 ### ETF基金分析
+
 - 💰 **资金流向**: 分析ETF基金的净申购赎回情况
 - 📈 **份额变动**: 跟踪ETF基金总份额的变化情况
 - 🏦 **申购赎回**: 监控场外投资者申购和赎回ETF的情况
 - 📊 **实时估值**: 提供ETF的实时估值和价格变化趋势
 - 🔄 **换手率分析**: 分析ETF的交易活跃程度
 
+### 板块资金分析
+
+- 🏢 **板块概览**: 查看所有板块的资金流向排行榜
+- 💸 **资金流向**: 分析各板块主力资金净流入流出情况
+- 📊 **涨跌统计**: 统计板块涨跌幅和市场表现
+- 🔍 **详细分析**: 深入分析单个板块的成分股情况
+- 🌡️ **市场情绪**: 综合评估市场情绪指数
+
 ## 🚀 快速开始
 
 ### 环境准备
+
 ```bash
 # 确保Python 3.8+已安装
 python3 --version
@@ -35,21 +46,27 @@ pip3 install -r requirements.txt
 ### 启动方式
 
 #### 方式一：使用启动脚本（推荐）
+
 ```bash
 python3 run.py
 ```
+
 然后按照菜单提示选择：
+
 - 选择 `1` - Web界面（推荐新用户）
 - 选择 `2` - 命令行界面
 - 选择 `3` - 安装/更新依赖
 
 #### 方式二：直接启动Web界面
+
 ```bash
 streamlit run app.py
 ```
+
 浏览器将自动打开 `http://localhost:8501`
 
 #### 方式三：命令行界面
+
 ```bash
 # 交互式模式
 python3 main.py --interactive
@@ -69,6 +86,7 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 ### 安装步骤
 
 1. **克隆或下载项目**
+
    ```bash
    # 如果是从git克隆
    git clone [项目地址]
@@ -78,6 +96,7 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
    ```
 
 2. **创建虚拟环境（推荐）**
+
    ```bash
    python -m venv venv
    
@@ -89,13 +108,15 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
    ```
 
 3. **安装依赖**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **配置API Token（可选）**
-   
+
    如需使用TuShare数据源，请申请Token并设置环境变量：
+
    ```bash
    # Windows
    set TUSHARE_TOKEN=your_token_here
@@ -107,7 +128,7 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 ## 📊 Web界面使用流程
 
 1. **启动程序** → 运行 `streamlit run app.py`
-2. **选择模块** → 在首页选择"两融交易查询"或"ETF基金查询"
+2. **选择模块** → 在首页选择"两融交易查询"、"ETF基金查询"或"板块资金查询"
 3. **设置参数** → 在左侧边栏选择日期范围和其他选项
 4. **开始查询** → 点击"开始查询"按钮
 5. **查看结果** → 浏览数据概览、图表和详细数据
@@ -118,6 +139,7 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 ### 主要功能模块
 
 #### 两融交易分析
+
 - **数据查询**: 获取指定时间范围的两融交易数据
 - **趋势分析**: 计算变化率、移动平均等技术指标
 - **占比计算**: 分析融资融券在市场中的占比
@@ -125,19 +147,31 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 - **报告导出**: 生成详细的文字分析报告
 
 #### ETF基金分析
+
 - **资金流向**: 分析ETF基金的净申购赎回情况
 - **份额变动**: 跟踪ETF基金总份额的变化情况
 - **申购赎回**: 监控场外投资者申购和赎回ETF的情况
 - **实时估值**: 提供ETF的实时估值和价格变化趋势
 - **换手率分析**: 分析ETF的交易活跃程度
 
+#### 板块资金分析
+
+- **板块概览**: 查询所有板块的资金流向排行榜
+- **资金流向**: 分析各板块主力资金净流入流出情况
+- **涨跌统计**: 统计板块涨跌幅和市场表现
+- **详细分析**: 深入分析单个板块的成分股情况
+- **市场情绪**: 综合评估市场情绪指数
+
 ### 数据来源
+
 - **AKShare**: 免费开源金融数据接口（主要）
 - **TuShare**: 专业金融数据接口（需要Token）
 - **东方财富**: 实时行情数据接口
 
 ### 输出文件
+
 程序会在 `output` 目录生成：
+
 - 数据文件：CSV/Excel/JSON格式
 - 分析报告：TXT格式的详细报告
 - 图表文件：PNG格式的分析图表
@@ -146,6 +180,7 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 ## ⚠️ 注意事项
 
 ### 使用建议
+
 1. **首次使用**: 建议先安装所有依赖包
 2. **查询范围**: 建议单次查询不超过1年数据
 3. **网络要求**: 需要稳定的网络连接获取数据
@@ -154,21 +189,25 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 ### 常见问题
 
 **问题1: 依赖包安装失败**
+
 ```bash
 # 解决方案：使用国内镜像源
 pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 ```
 
 **问题2: 数据获取失败**
+
 - 检查网络连接
 - 稍后重试（可能是数据源临时不可用）
 - 尝试不同的日期范围
 
 **问题3: 图表显示中文乱码**
+
 - 系统已配置中文字体支持
 - 如仍有问题，请确保系统安装了中文字体
 
 **问题4: Web界面无法访问**
+
 ```bash
 # 确保Streamlit正确安装
 pip3 install streamlit
@@ -180,16 +219,19 @@ streamlit run app.py --server.port 8501
 ## 📈 使用示例
 
 ### 示例1: 查询两融交易数据
+
 ```bash
 python3 main.py --start 20241201 --end 20241231 --format excel --dashboard
 ```
 
 ### 示例2: 仅生成数据文件
+
 ```bash
 python3 main.py --start 20241101 --end 20241130 --no-charts
 ```
 
 ### 示例3: Web界面快速查询
+
 1. 启动：`streamlit run app.py`
 2. 选择"两融交易查询"模块
 3. 设置日期范围：2024-12-01 到 2024-12-31
@@ -197,6 +239,7 @@ python3 main.py --start 20241101 --end 20241130 --no-charts
 5. 查看结果并下载数据
 
 ### 示例4: ETF基金查询
+
 1. 启动：`streamlit run app.py`
 2. 选择"ETF基金查询"模块
 3. 输入ETF代码（如510310）
@@ -204,17 +247,28 @@ python3 main.py --start 20241101 --end 20241130 --no-charts
 5. 点击"开始查询"
 6. 查看资金流向、份额变动等分析结果
 
+### 示例5: 板块资金查询
+
+1. 启动：`streamlit run app.py`
+2. 选择"板块资金查询"模块
+3. 选择查询模式：
+   - **板块概览**：查看所有板块排行榜
+   - **单板块详情**：输入板块名称（如"半导体"、"人工智能"）
+4. 点击"开始查询"
+5. 查看板块资金流向、市场情绪等分析结果
+
 ## 📖 详细使用说明
 
 ### Web界面使用
 
 1. **启动Web界面**
+
    ```bash
    streamlit run app.py
    ```
 
 2. **选择分析模块**
-   - 首页有两个主要功能模块：两融交易查询和ETF基金查询
+   - 首页有三个主要功能模块：两融交易查询、ETF基金查询和板块资金查询
    - 点击相应按钮进入对应分析界面
 
 3. **设置查询参数**
@@ -244,6 +298,7 @@ python main.py --interactive
 ```
 
 进入交互式模式后，按照提示进行操作：
+
 - 选择查询类型
 - 输入日期范围
 - 选择输出选项
@@ -300,7 +355,7 @@ MARGIN_TRADING_CONFIG = {
 2. **分析报告**: `margin_report_YYYYMMDD_YYYYMMDD_timestamp.txt`
    - 包含详细的文字分析报告
 
-3. **图表文件**: 
+3. **图表文件**:
    - `margin_balance_timestamp.png` - 余额趋势图
    - `margin_ratio_timestamp.png` - 占比分析图
    - `margin_correlation_timestamp.png` - 相关性热力图
@@ -312,12 +367,14 @@ MARGIN_TRADING_CONFIG = {
 ### 关键指标说明
 
 #### 基础指标
+
 - **融资余额**: 市场融资的未平仓金额
 - **融券余额**: 市场融券的未平仓金额  
 - **两融余额**: 融资余额和融券余额的总和
 - **融资买入额**: 当日融资买入的金额
 
 #### 计算指标
+
 - **融资占比**: 融资余额在两融余额中的占比
 - **融券占比**: 融券余额在两融余额中的占比
 - **日变化率**: 相比前一日的变化百分比
@@ -325,6 +382,7 @@ MARGIN_TRADING_CONFIG = {
 - **月变化率**: 相比前一月的变化百分比
 
 #### 技术指标
+
 - **移动平均线**: MA5, MA10, MA20, MA60
 - **RSI指标**: 相对强弱指标，判断超买超卖
 - **布林带**: 价格通道指标
@@ -350,7 +408,12 @@ tradeTools/
 │   ├── fetcher.py         # 数据获取模块
 │   ├── processor.py       # 数据处理模块
 │   └── visualizer.py      # 数据可视化模块
-└── etf/                   # ETF基金模块
+├── etf/                   # ETF基金模块
+│   ├── __init__.py        # 模块初始化文件
+│   ├── fetcher.py         # 数据获取模块
+│   ├── processor.py       # 数据处理模块
+│   └── visualizer.py      # 数据可视化模块
+└── sector/                # 板块资金模块
     ├── __init__.py        # 模块初始化文件
     ├── fetcher.py         # 数据获取模块
     ├── processor.py       # 数据处理模块
@@ -361,7 +424,7 @@ tradeTools/
 
 ### 自定义数据源
 
-可以在 `margin/fetcher.py` 或 `etf/fetcher.py` 中添加新的数据源：
+可以在 `margin/fetcher.py`、`etf/fetcher.py` 或 `sector/fetcher.py` 中添加新的数据源：
 
 ```python
 def _get_custom_data_source(self, start_date, end_date):
@@ -372,7 +435,7 @@ def _get_custom_data_source(self, start_date, end_date):
 
 ### 自定义指标计算
 
-可以在 `margin/processor.py` 或 `etf/processor.py` 中添加新的技术指标：
+可以在 `margin/processor.py`、`etf/processor.py` 或 `sector/processor.py` 中添加新的技术指标：
 
 ```python
 def _calculate_custom_indicator(self, df):
@@ -383,7 +446,7 @@ def _calculate_custom_indicator(self, df):
 
 ### 自定义可视化
 
-可以在 `margin/visualizer.py` 或 `etf/visualizer.py` 中添加新的图表类型：
+可以在 `margin/visualizer.py`、`etf/visualizer.py` 或 `sector/visualizer.py` 中添加新的图表类型：
 
 ```python
 def create_custom_chart(self, df):
@@ -396,9 +459,10 @@ def create_custom_chart(self, df):
 
 ### 数据源限制
 
-1. **AKShare**: 
+1. **AKShare**:
    - 免费使用，但有访问频率限制
    - 建议开启缓存减少请求次数
+   - 板块数据可能出现间歇性连接问题
 
 2. **TuShare**:
    - 需要注册账号获取Token
@@ -406,6 +470,21 @@ def create_custom_chart(self, df):
 
 3. **东方财富**:
    - 通过网页接口获取，稳定性可能受网站更新影响
+
+### 板块查询特别说明
+
+1. **板块名称**:
+   - 支持中文板块名称：如"半导体"、"人工智能"、"新能源汽车"
+   - 常用板块：医药生物、白酒、房地产、银行、保险等
+
+2. **数据完整性**:
+   - 板块概览数据相对稳定
+   - 个股资金流向数据可能因API限制而不完整
+   - 系统不会显示虚假数据，确保投资安全
+
+3. **颜色配置**:
+   - 采用中国股市习惯：红色表示上涨/流入，绿色表示下跌/流出
+   - 所有图表和数据显示都遵循此配色方案
 
 ### 性能优化
 
@@ -462,18 +541,42 @@ report = processor.generate_summary_report(processed_data)
 print(report)
 ```
 
+### 板块资金查询示例
+
+```python
+from sector.fetcher import create_sector_fetcher
+from sector.processor import create_sector_processor
+
+# 创建实例
+fetcher = create_sector_fetcher()
+processor = create_sector_processor()
+
+# 获取板块概览数据
+sector_data = fetcher.get_sector_fund_flow()
+processed_data = processor.process_sector_data(sector_data)
+
+# 获取单板块详情
+detail_data = fetcher.get_sector_detail('半导体')
+analysis = processor.analyze_sector_detail('半导体', detail_data)
+```
+
 ### 可视化示例
 
 ```python
 from margin.visualizer import create_margin_visualizer
+from sector.visualizer import create_sector_visualizer
 
 # 创建可视化器
-visualizer = create_margin_visualizer()
+margin_visualizer = create_margin_visualizer()
+sector_visualizer = create_sector_visualizer()
 
-# 生成图表
-balance_chart = visualizer.create_margin_balance_chart(processed_data)
-ratio_chart = visualizer.create_margin_ratio_chart(processed_data)
-dashboard = visualizer.create_interactive_dashboard(processed_data)
+# 生成两融图表
+balance_chart = margin_visualizer.create_margin_balance_chart(processed_data)
+ratio_chart = margin_visualizer.create_margin_ratio_chart(processed_data)
+
+# 生成板块图表
+overview_chart = sector_visualizer.create_sector_overview_chart(sector_data)
+sentiment_gauge = sector_visualizer.create_market_sentiment_gauge(sector_data)
 ```
 
 ## 🤝 贡献指南
@@ -492,10 +595,28 @@ dashboard = visualizer.create_interactive_dashboard(processed_data)
 
 ## 📝 版本信息
 
-- **当前版本**: v1.0.0
+- **当前版本**: v1.1.0
 - **Python要求**: 3.8+
-- **主要依赖**: pandas, numpy, matplotlib, streamlit, akshare
-- **最后更新**: 2025-09-11
+- **主要依赖**: pandas, numpy, matplotlib, streamlit, akshare, plotly
+- **最后更新**: 2025-09-18
+
+### 更新日志
+
+#### v1.1.0 (2025-09-18)
+
+- ✅ 新增板块资金查询功能
+- ✅ 支持板块概览和单板块详情查询
+- ✅ 添加市场情绪分析功能
+- ✅ 采用中国股市颜色习惯（红涨绿跌）
+- ✅ 完善错误处理，不显示虚假数据
+- ✅ 优化用户界面和交互体验
+
+#### v1.0.0 (2025-09-11)
+
+- ✅ 两融交易查询功能
+- ✅ ETF基金查询功能
+- ✅ Web界面和命令行界面
+- ✅ 数据可视化和报告生成
 
 ---
 
