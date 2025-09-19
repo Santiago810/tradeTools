@@ -141,43 +141,61 @@ def main():
     # 检查依赖
     deps_ok = check_dependencies()
     
-    while True:
-        show_menu()
-        
-        try:
-            choice = input("\n请选择 (1-5): ").strip()
+    # 检查是否有命令行参数要求显示菜单
+    if len(sys.argv) > 1 and sys.argv[1] == "--menu":
+        # 显示传统菜单
+        while True:
+            show_menu()
             
-            if choice == '1':
-                if not deps_ok:
-                    print("❌ 依赖包未安装，请先选择选项3安装依赖")
-                    continue
-                launch_web_app()
+            try:
+                choice = input("\n请选择 (1-5): ").strip()
                 
-            elif choice == '2':
-                if not deps_ok:
-                    print("❌ 依赖包未安装，请先选择选项3安装依赖")
-                    continue
-                launch_cli_app()
-                
-            elif choice == '3':
-                if install_dependencies():
-                    deps_ok = check_dependencies()
+                if choice == '1':
+                    if not deps_ok:
+                        print("❌ 依赖包未安装，请先选择选项3安装依赖")
+                        continue
+                    launch_web_app()
                     
-            elif choice == '4':
-                show_help()
-                
-            elif choice == '5':
-                print("👋 感谢使用，再见！")
+                elif choice == '2':
+                    if not deps_ok:
+                        print("❌ 依赖包未安装，请先选择选项3安装依赖")
+                        continue
+                    launch_cli_app()
+                    
+                elif choice == '3':
+                    if install_dependencies():
+                        deps_ok = check_dependencies()
+                        
+                elif choice == '4':
+                    show_help()
+                    
+                elif choice == '5':
+                    print("👋 感谢使用，再见！")
+                    break
+                    
+                else:
+                    print("❌ 无效选择，请输入1-5")
+                    
+            except KeyboardInterrupt:
+                print("\n\n👋 程序已退出")
                 break
-                
-            else:
-                print("❌ 无效选择，请输入1-5")
-                
-        except KeyboardInterrupt:
-            print("\n\n👋 程序已退出")
-            break
-        except Exception as e:
-            print(f"❌ 发生错误: {e}")
+            except Exception as e:
+                print(f"❌ 发生错误: {e}")
+    else:
+        # 直接启动Web服务
+        if not deps_ok:
+            print("❌ 依赖包未安装，正在自动安装...")
+            if not install_dependencies():
+                print("❌ 依赖包安装失败，请手动运行: pip install -r requirements.txt")
+                return
+            deps_ok = check_dependencies()
+        
+        if deps_ok:
+            print("\n🚀 直接启动Web界面...")
+            print("💡 提示: 如需显示菜单选项，请使用: python run.py --menu")
+            launch_web_app()
+        else:
+            print("❌ 系统环境检查失败，无法启动Web服务")
 
 if __name__ == "__main__":
     main()

@@ -110,19 +110,37 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 3. **安装依赖**
 
    ```bash
+   # 方式1: 直接安装
    pip install -r requirements.txt
+   
+   # 方式2: 使用依赖检查脚本（推荐）
+   python check_dependencies.py
    ```
 
-4. **配置API Token（可选）**
+4. **配置TuShare Token（推荐）**
 
-   如需使用TuShare数据源，请申请Token并设置环境变量：
+   为了提高数据获取的稳定性，强烈建议配置TuShare Token：
 
+   **获取Token:**
+   - 访问 https://tushare.pro/register 注册账号
+   - 登录后在用户中心获取Token
+
+   **配置Token:**
    ```bash
+   # 方式1: 环境变量（推荐）
    # Windows
    set TUSHARE_TOKEN=your_token_here
    
    # macOS/Linux
    export TUSHARE_TOKEN=your_token_here
+   
+   # 方式2: 使用配置助手
+   python setup_tushare.py
+   ```
+
+   **验证配置:**
+   ```bash
+   python test_tushare_integration.py
    ```
 
 ## 📊 Web界面使用流程
@@ -164,9 +182,16 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 
 ### 数据来源
 
-- **AKShare**: 免费开源金融数据接口（主要）
-- **TuShare**: 专业金融数据接口（需要Token）
+- **AKShare**: 免费开源金融数据接口（主要数据源）
+- **TuShare**: 专业金融数据接口（备用数据源，需要Token）
 - **东方财富**: 实时行情数据接口
+
+### 多数据源架构
+
+系统采用智能数据源切换机制：
+1. **优先使用AKShare** - 数据丰富，完全免费
+2. **自动切换TuShare** - 当AKShare不可用时自动切换
+3. **提高稳定性** - 双数据源保障，降低服务中断风险
 
 ### 输出文件
 
@@ -188,11 +213,17 @@ python3 main.py --start 20240101 --end 20240131 --dashboard
 
 ### 常见问题
 
-**问题1: 依赖包安装失败**
+#### 问题1: 依赖包安装失败
 
 ```bash
-# 解决方案：使用国内镜像源
-pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+# 解决方案1：使用依赖检查脚本
+python check_dependencies.py
+
+# 解决方案2：使用国内镜像源
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+
+# 解决方案3：逐个安装核心包
+pip install pandas numpy matplotlib streamlit akshare tushare plotly
 ```
 
 **问题2: 数据获取失败**

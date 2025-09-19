@@ -1,15 +1,33 @@
-requests>=2.31.0
+# 核心数据处理
 pandas>=2.0.0
 numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
+python-dateutil>=2.8.0
+
+# 网络请求
+requests>=2.31.0
+urllib3>=1.26.0
+
+# 金融数据源
 akshare>=1.12.0
 tushare>=1.2.89
-streamlit>=1.28.0
-plotly>=5.15.0
 yfinance>=0.2.18
+
+# Web界面
+streamlit>=1.28.0
+
+# 数据可视化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# 网页解析
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
+
+# 文件处理
 openpyxl>=3.1.0
 xlsxwriter>=3.1.0
-python-dateutil>=2.8.0
+
+# 其他工具
+pytz>=2023.3
+tzdata>=2023.3

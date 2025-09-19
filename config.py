@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 
 # API配置
-TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN', '')  # 需要用户自己申请Token
+TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN', 'cd09c30ee83c804e585ef11e55c564b2c6799f971c87de252159f2e0')  # 需要用户自己申请Token
 
 # 数据源配置
 DATA_SOURCES = {

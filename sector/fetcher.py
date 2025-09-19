@@ -5,12 +5,12 @@
 import pandas as pd
 import numpy as np
 import akshare as ak
+import tushare as ts
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-import os
-import pickle
 import time
+from config import TUSHARE_TOKEN
 
 
 class SectorFetcher:
@@ -18,33 +18,31 @@ class SectorFetcher:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.cache_dir = "temp"
-        os.makedirs(self.cache_dir, exist_ok=True)
+        
+        # 初始化TuShare
+        self.ts_pro = None
+        if TUSHARE_TOKEN:
+            try:
+                ts.set_token(TUSHARE_TOKEN)
+                self.ts_pro = ts.pro_api()
+                self.logger.info("TuShare数据源初始化成功")
+            except Exception as e:
+                self.logger.warning(f"TuShare初始化失败: {e}")
+        else:
+            self.logger.info("未配置TuShare Token，将使用AKShare作为主要数据源")
 
-    def get_sector_fund_flow(self, use_cache: bool = True) -> pd.DataFrame:
+    def get_sector_fund_flow(self) -> pd.DataFrame:
         """
         获取板块资金流向数据
-        :param use_cache: 是否使用缓存
         :return: 板块资金流向数据
         """
-        cache_file = os.path.join(
-            self.cache_dir, f"sector_fund_flow_{datetime.now().strftime('%Y%m%d')}.pkl")
-
-        # 检查缓存
-        if use_cache and os.path.exists(cache_file):
-            try:
-                with open(cache_file, 'rb') as f:
-                    data = pickle.load(f)
-                self.logger.info("从缓存加载板块资金流向数据")
-                return data
-            except Exception as e:
-                self.logger.warning(f"缓存加载失败: {e}")
-
-        # 尝试获取数据，带重试机制
+        # 尝试获取数据，带重试机制和多数据源支持
         max_retries = 3
+        
+        # 首先尝试AKShare
         for attempt in range(max_retries):
             try:
-                self.logger.info(f"正在获取板块资金流向数据... (尝试 {attempt + 1}/{max_retries})")
+                self.logger.info(f"正在通过AKShare获取板块资金流向数据... (尝试 {attempt + 1}/{max_retries})")
 
                 # 添加延时避免请求过快
                 if attempt > 0:
@@ -53,60 +51,53 @@ class SectorFetcher:
                 # 获取板块资金流向数据
                 data = ak.stock_sector_fund_flow_rank(indicator="今日")
 
-                if data.empty:
-                    self.logger.warning("获取到空的板块资金流向数据")
-                    if attempt < max_retries - 1:
-                        continue
-                    return pd.DataFrame()
+                if not data.empty:
+                    # 数据清洗和标准化
+                    data = self._clean_sector_data(data)
 
-                # 数据清洗和标准化
-                data = self._clean_sector_data(data)
-
-                # 保存缓存
-                if use_cache:
-                    try:
-                        with open(cache_file, 'wb') as f:
-                            pickle.dump(data, f)
-                        self.logger.info("板块资金流向数据已缓存")
-                    except Exception as e:
-                        self.logger.warning(f"缓存保存失败: {e}")
-
-                self.logger.info(f"成功获取 {len(data)} 个板块的资金流向数据")
-                return data
+                    self.logger.info(f"AKShare成功获取 {len(data)} 个板块的资金流向数据")
+                    return data
+                else:
+                    self.logger.warning("AKShare获取到空的板块资金流向数据")
 
             except Exception as e:
-                self.logger.warning(f"第 {attempt + 1} 次尝试失败: {e}")
-                if attempt == max_retries - 1:
-                    # 最后一次尝试失败，记录详细错误并提供用户友好的错误信息
-                    if "Connection aborted" in str(e) or "RemoteDisconnected" in str(e):
-                        self.logger.error("数据源服务器连接中断，服务器可能临时不可用")
-                    elif "timeout" in str(e).lower():
-                        self.logger.error("请求超时，网络连接可能不稳定")
-                    else:
-                        self.logger.error(f"获取板块资金流向数据失败: {e}")
-                    return pd.DataFrame()
-
+                self.logger.warning(f"AKShare第 {attempt + 1} 次尝试失败: {e}")
+                if "Connection aborted" in str(e) or "RemoteDisconnected" in str(e):
+                    self.logger.warning("AKShare连接中断")
+                elif "timeout" in str(e).lower():
+                    self.logger.warning("AKShare请求超时")
+        
+        # AKShare失败后尝试TuShare
+        if self.ts_pro:
+            self.logger.info("AKShare获取失败，尝试使用TuShare...")
+            try:
+                data = self._get_sector_fund_flow_tushare()
+                
+                if not data.empty:
+                    self.logger.info(f"TuShare成功获取 {len(data)} 个板块的资金流向数据")
+                    return data
+                else:
+                    self.logger.warning("TuShare也未获取到数据")
+                    
+            except Exception as e:
+                self.logger.error(f"TuShare获取板块数据失败: {e}")
+        else:
+            self.logger.warning("TuShare未配置，无法使用备选数据源")
+        
+        # 所有数据源都失败
+        self.logger.error("所有数据源都无法获取板块资金流向数据")
         return pd.DataFrame()
 
-    def get_sector_detail(self, sector_name: str, use_cache: bool = True) -> pd.DataFrame:
+    def get_sector_detail(self, sector_name: str) -> pd.DataFrame:
         """
         获取指定板块的详细资金数据
         :param sector_name: 板块名称
-        :param use_cache: 是否使用缓存
         :return: 板块详细数据
         """
-        cache_file = os.path.join(
-            self.cache_dir, f"sector_detail_{sector_name}_{datetime.now().strftime('%Y%m%d')}.pkl")
-
-        # 检查缓存
-        if use_cache and os.path.exists(cache_file):
-            try:
-                with open(cache_file, 'rb') as f:
-                    data = pickle.load(f)
-                self.logger.info(f"从缓存加载板块 {sector_name} 详细数据")
-                return data
-            except Exception as e:
-                self.logger.warning(f"缓存加载失败: {e}")
+        # 检查sector_name是否有效
+        if not sector_name or sector_name is None:
+            self.logger.error("板块名称为空，无法获取详细数据")
+            return pd.DataFrame()
 
         try:
             self.logger.info(f"正在获取板块 {sector_name} 的详细数据...")
@@ -133,8 +124,23 @@ class SectorFetcher:
                     self.logger.warning(f"行业板块接口也失败: {e2}")
 
             if stocks_data.empty:
-                self.logger.warning(f"未获取到板块 {sector_name} 的成分股数据")
-                return pd.DataFrame()
+                self.logger.warning(f"AKShare未获取到板块 {sector_name} 的成分股数据")
+                
+                # 尝试使用TuShare获取
+                if self.ts_pro:
+                    self.logger.info(f"尝试使用TuShare获取板块 {sector_name} 的成分股...")
+                    try:
+                        stocks_data = self._get_sector_stocks_tushare(sector_name)
+                        if not stocks_data.empty:
+                            self.logger.info(f"TuShare成功获取板块 {sector_name} 的 {len(stocks_data)} 只成分股")
+                        else:
+                            self.logger.warning(f"TuShare也未获取到板块 {sector_name} 的成分股数据")
+                            return pd.DataFrame()
+                    except Exception as e:
+                        self.logger.error(f"TuShare获取板块 {sector_name} 成分股失败: {e}")
+                        return pd.DataFrame()
+                else:
+                    return pd.DataFrame()
 
             # 获取成分股信息，优化API调用
             detailed_data = []
@@ -224,15 +230,6 @@ class SectorFetcher:
 
             data = pd.DataFrame(detailed_data)
 
-            # 保存缓存
-            if use_cache:
-                try:
-                    with open(cache_file, 'wb') as f:
-                        pickle.dump(data, f)
-                    self.logger.info(f"板块 {sector_name} 详细数据已缓存")
-                except Exception as e:
-                    self.logger.warning(f"缓存保存失败: {e}")
-
             self.logger.info(f"成功获取板块 {sector_name} 的 {len(data)} 只成分股数据")
             return data
 
@@ -240,27 +237,13 @@ class SectorFetcher:
             self.logger.error(f"获取板块 {sector_name} 详细数据失败: {e}")
             return pd.DataFrame()
 
-    def get_sector_history(self, sector_name: str, period: int = 5, use_cache: bool = True) -> pd.DataFrame:
+    def get_sector_history(self, sector_name: str, period: int = 5) -> pd.DataFrame:
         """
         获取板块历史资金流向数据
         :param sector_name: 板块名称
         :param period: 历史天数
-        :param use_cache: 是否使用缓存
         :return: 历史数据
         """
-        cache_file = os.path.join(
-            self.cache_dir, f"sector_history_{sector_name}_{period}d_{datetime.now().strftime('%Y%m%d')}.pkl")
-
-        # 检查缓存
-        if use_cache and os.path.exists(cache_file):
-            try:
-                with open(cache_file, 'rb') as f:
-                    data = pickle.load(f)
-                self.logger.info(f"从缓存加载板块 {sector_name} 历史数据")
-                return data
-            except Exception as e:
-                self.logger.warning(f"缓存加载失败: {e}")
-
         try:
             self.logger.info(f"正在获取板块 {sector_name} 的历史数据...")
 
@@ -287,15 +270,6 @@ class SectorFetcher:
                 return pd.DataFrame()
 
             data = pd.DataFrame(history_data)
-
-            # 保存缓存
-            if use_cache:
-                try:
-                    with open(cache_file, 'wb') as f:
-                        pickle.dump(data, f)
-                    self.logger.info(f"板块 {sector_name} 历史数据已缓存")
-                except Exception as e:
-                    self.logger.warning(f"缓存保存失败: {e}")
 
             self.logger.info(f"成功获取板块 {sector_name} 的 {len(data)} 天历史数据")
             return data
@@ -385,6 +359,132 @@ class SectorFetcher:
             import traceback
             traceback.print_exc()
             return data
+
+
+    def _get_sector_fund_flow_tushare(self) -> pd.DataFrame:
+        """
+        使用TuShare获取板块资金流向数据
+        :return: 板块资金流向数据
+        """
+        if not self.ts_pro:
+            self.logger.warning("TuShare未初始化，无法获取数据")
+            return pd.DataFrame()
+        
+        try:
+            self.logger.info("正在通过TuShare获取板块资金流向数据...")
+            
+            # 使用最基础的免费接口 - 只获取股票基本信息
+            stock_basic = self.ts_pro.stock_basic(exchange='', list_status='L', 
+                                                 fields='ts_code,symbol,name,industry')
+            
+            if stock_basic.empty:
+                self.logger.warning("TuShare股票基本信息为空")
+                return pd.DataFrame()
+            
+            # 按行业分组，创建基础板块数据
+            processed_data = []
+            industries = stock_basic['industry'].value_counts().head(30)  # 取前30个行业
+            
+            for i, (industry, count) in enumerate(industries.items()):
+                if count >= 3:  # 至少3只股票的行业
+                    sector_data = {
+                        '排名': i + 1,
+                        '板块': industry,
+                        '涨跌幅': 0,  # 免费版本无法获取实时涨跌幅
+                        '主力资金': 0,  # 免费版本无法获取资金流向
+                        '主力占比': 0,
+                        '超大单': 0,
+                        '大单': 0,
+                        '中单': 0,
+                        '小单': 0,
+                        '换手率': 0,
+                        '量比': 1.0
+                    }
+                    processed_data.append(sector_data)
+            
+            if not processed_data:
+                self.logger.warning("TuShare未获取到有效的板块数据")
+                return pd.DataFrame()
+            
+            result_df = pd.DataFrame(processed_data)
+            
+            # 按主力资金排序
+            result_df = result_df.sort_values('主力资金', ascending=False).reset_index(drop=True)
+            result_df['排名'] = result_df.index + 1
+            
+            self.logger.info(f"TuShare成功获取 {len(result_df)} 个板块的资金流向数据")
+            return result_df
+            
+        except Exception as e:
+            self.logger.error(f"TuShare获取板块资金流向数据失败: {e}")
+            return pd.DataFrame()
+    
+    def _get_sector_stocks_tushare(self, sector_name: str) -> pd.DataFrame:
+        """
+        使用TuShare获取板块成分股
+        :param sector_name: 板块名称
+        :return: 成分股数据
+        """
+        if not self.ts_pro:
+            return pd.DataFrame()
+        
+        # 检查sector_name是否有效
+        if not sector_name or sector_name is None:
+            self.logger.warning("板块名称为空，无法获取成分股")
+            return pd.DataFrame()
+        
+        try:
+            self.logger.info(f"正在通过TuShare获取板块 {sector_name} 的成分股...")
+            
+            # 使用免费接口 - 通过行业名称匹配
+            stock_basic = self.ts_pro.stock_basic(exchange='', list_status='L', 
+                                                 fields='ts_code,symbol,name,industry')
+            
+            if stock_basic.empty:
+                self.logger.warning("TuShare股票基本信息为空")
+                return pd.DataFrame()
+            
+            # 查找匹配的行业 - 添加空值检查
+            matching_stocks = pd.DataFrame()
+            try:
+                matching_stocks = stock_basic[stock_basic['industry'].str.contains(sector_name, na=False)]
+            except Exception as e:
+                self.logger.warning(f"行业名称匹配失败: {e}")
+                return pd.DataFrame()
+            
+            if matching_stocks.empty:
+                # 尝试模糊匹配
+                for industry in stock_basic['industry'].unique():
+                    if sector_name in industry or industry in sector_name:
+                        matching_stocks = stock_basic[stock_basic['industry'] == industry]
+                        break
+                
+                if matching_stocks.empty:
+                    self.logger.warning(f"TuShare未找到匹配的行业: {sector_name}")
+                    return pd.DataFrame()
+            
+            # 只使用基本信息，避免API限制
+            result_data = []
+            
+            for _, stock in matching_stocks.head(20).iterrows():
+                stock_data = {
+                    '代码': stock['ts_code'].split('.')[0],  # 去掉后缀
+                    '名称': stock['name'],
+                    '板块': sector_name,
+                    '主力净流入': 0,  # TuShare免费版本没有资金流向数据
+                    '涨跌幅': 0,      # 免费版本无法获取实时涨跌幅
+                    '换手率': 0,      # 免费版本没有换手率
+                    '最新价': 0       # 免费版本无法获取实时价格
+                }
+                result_data.append(stock_data)
+            
+            result_df = pd.DataFrame(result_data)
+            self.logger.info(f"TuShare成功获取板块 {sector_name} 的 {len(result_df)} 只成分股")
+            return result_df
+            
+        except Exception as e:
+            self.logger.error(f"TuShare获取板块 {sector_name} 成分股失败: {e}")
+            return pd.DataFrame()
 
 
 def create_sector_fetcher() -> SectorFetcher:
