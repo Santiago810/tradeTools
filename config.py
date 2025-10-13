@@ -6,7 +6,8 @@ import os
 from datetime import datetime, timedelta
 
 # API配置
-TUSHARE_TOKEN = os.getenv('TUSHARE_TOKEN', 'cd09c30ee83c804e585ef11e55c564b2c6799f971c87de252159f2e0')  # 需要用户自己申请Token
+TUSHARE_TOKEN = os.getenv(
+    'TUSHARE_TOKEN', 'cd09c30ee83c804e585ef11e55c564b2c6799f971c87de252159f2e0')
 
 # 数据源配置
 DATA_SOURCES = {
@@ -26,18 +27,11 @@ DATA_SOURCES = {
 
 # 两融数据相关配置
 MARGIN_TRADING_CONFIG = {
-    # 默认查询时间范围
     'default_start_date': (datetime.now() - timedelta(days=30)).strftime('%Y%m%d'),
     'default_end_date': datetime.now().strftime('%Y%m%d'),
-    
-    # 数据更新频率
     'update_frequency': 'daily',
-    
-    # 缓存配置
     'cache_enabled': True,
-    'cache_duration': 3600,  # 1小时
-    
-    # 输出配置
+    'cache_duration': 3600,
     'output_formats': ['csv', 'excel', 'json'],
     'charts_enabled': True
 }
@@ -45,7 +39,7 @@ MARGIN_TRADING_CONFIG = {
 # 股票市场配置
 MARKET_CONFIG = {
     'markets': ['沪A', '深A', '创业板', '科创板'],
-    'exchanges': ['SSE', 'SZSE'],  # 上交所、深交所
+    'exchanges': ['SSE', 'SZSE'],
     'trading_days_only': True
 }
 
@@ -55,7 +49,7 @@ CHART_CONFIG = {
     'dpi': 300,
     'style': 'seaborn-v0_8',
     'color_palette': ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-    'font_family': 'SimHei'  # 支持中文显示
+    'font_family': 'SimHei'
 }
 
 # 数据存储配置
@@ -85,3 +79,8 @@ API_LIMITS = {
         'requests_per_day': 5000
     }
 }
+
+# 注意：指数股票映射表现在通过 ak.index_stock_info() 动态获取，不再硬编码
+
+# 权重股采样数量
+index_stock_top_n = 100

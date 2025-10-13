@@ -95,11 +95,16 @@ class MarginDataFetcher:
         if not eastmoney_data.empty:
             data_frames.append(eastmoney_data)
         
-        # 合并数据
+        # 合并数据 - 优先使用AKShare的合并数据，因为它已经正确处理了沪深合并
         if data_frames:
-            # 选择数据最完整的数据源
-            result = max(data_frames, key=len)
-            self.logger.info(f"成功获取两融汇总数据，共{len(result)}条记录")
+            # 优先选择AKShare数据（如果可用），因为它提供了正确的沪深合并数据
+            if not akshare_data.empty:
+                result = akshare_data
+                self.logger.info(f"使用AKShare数据源，共{len(result)}条记录")
+            else:
+                # 如果AKShare不可用，选择数据最完整的其他数据源
+                result = max(data_frames, key=len)
+                self.logger.info(f"使用备用数据源，共{len(result)}条记录")
             
             # 保存到缓存
             if use_cache:
@@ -158,6 +163,8 @@ class MarginDataFetcher:
                                    exchange_id='', trade_date='')
             
             if not margin_data.empty:
+                # 按日期合并各交易所数据
+                margin_data = self._merge_tushare_exchanges(margin_data)
                 # 标准化列名
                 margin_data = self._standardize_columns_tushare(margin_data)
                 self.logger.info(f"TuShare获取到{len(margin_data)}条记录")
@@ -232,6 +239,37 @@ class MarginDataFetcher:
         
         return df
     
+    def _merge_tushare_exchanges(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        合并TuShare各交易所数据
+        :param df: TuShare原始数据
+        :return: 按日期合并后的数据
+        """
+        try:
+            if df.empty:
+                return df
+            
+            # 按交易日期分组，合并各交易所数据
+            grouped = df.groupby('trade_date').agg({
+                'rzye': 'sum',      # 融资余额
+                'rzmre': 'sum',     # 融资买入额
+                'rzche': 'sum',     # 融资偿还额
+                'rqye': 'sum',      # 融券余额
+                'rqmcl': 'sum',     # 融券卖出量
+                'rzrqye': 'sum',    # 两融余额
+                'rqyl': 'sum'       # 融券余量
+            }).reset_index()
+            
+            # 添加exchange_id列标识为合并数据
+            grouped['exchange_id'] = 'ALL'
+            
+            self.logger.info(f"TuShare数据合并完成: {len(grouped)}条记录")
+            return grouped
+            
+        except Exception as e:
+            self.logger.error(f"TuShare数据合并失败: {e}")
+            return df
+    
     def _merge_sh_sz_margin_data(self, sh_data: pd.DataFrame, sz_data: pd.DataFrame, 
                                 start_date: str, end_date: str) -> pd.DataFrame:
         """
@@ -258,9 +296,16 @@ class MarginDataFetcher:
             sh_filtered = sh_data[(sh_data['日期'] >= start_dt) & (sh_data['日期'] <= end_dt)].copy()
             sz_filtered = sz_data[(sz_data['日期'] >= start_dt) & (sz_data['日期'] <= end_dt)].copy()
             
+            # 如果指定日期范围内没有数据，尝试获取最近的数据
             if sh_filtered.empty or sz_filtered.empty:
-                self.logger.warning(f"过滤日期范围后数据为空: 沪市{len(sh_filtered)}条，深市{len(sz_filtered)}条")
-                return pd.DataFrame()
+                self.logger.warning(f"指定日期范围内数据为空: 沪市{len(sh_filtered)}条，深市{len(sz_filtered)}条")
+                # 获取最近20个交易日的数据作为备选
+                sh_filtered = sh_data.tail(20).copy()
+                sz_filtered = sz_data.tail(20).copy()
+                self.logger.info(f"使用最近数据: 沪市{len(sh_filtered)}条，深市{len(sz_filtered)}条")
+                
+                if sh_filtered.empty or sz_filtered.empty:
+                    return pd.DataFrame()
             
             # 按日期合并数据
             merged = pd.merge(sh_filtered, sz_filtered, on='日期', suffixes=('_sh', '_sz'))

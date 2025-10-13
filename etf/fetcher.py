@@ -84,25 +84,6 @@ class ETFFetcher:
 
             ak = self.data_sources['akshare']
 
-            # 方法1: 尝试获取ETF资金流向数据（检查API是否存在）
-            try:
-                if hasattr(ak, 'fund_etf_fund_flow_em'):
-                    fund_flow = ak.fund_etf_fund_flow_em(symbol=etf_code)
-                    if not fund_flow.empty:
-                        # 过滤日期范围
-                        fund_flow['日期'] = pd.to_datetime(fund_flow['日期'])
-                        start_dt = pd.to_datetime(start_date)
-                        end_dt = pd.to_datetime(end_date)
-                        fund_flow = fund_flow[(fund_flow['日期'] >= start_dt) & (
-                            fund_flow['日期'] <= end_dt)]
-                        if not fund_flow.empty:
-                            return fund_flow
-                else:
-                    self.logger.info(
-                        f"AKShare未提供fund_etf_fund_flow_em接口，跳过方法1")
-            except Exception as e:
-                self.logger.warning(f"方法1获取ETF {etf_code} 资金流向失败: {e}")
-
             # 方法2: 获取ETF历史行情数据作为资金流向的替代
             try:
                 fund_flow = ak.fund_etf_hist_em(symbol=etf_code, period="daily",

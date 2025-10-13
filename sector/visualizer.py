@@ -185,6 +185,148 @@ class SectorVisualizer:
             self.logger.error(f"创建板块排行榜图表失败: {e}")
             return None
     
+    def create_index_sector_chart(self, analysis_result: Dict[str, Any]) -> Optional[go.Figure]:
+        """
+        创建指数板块分析图表
+        :param analysis_result: 指数板块分析结果
+        :return: 图表对象
+        """
+        try:
+            if not analysis_result or 'raw_data' not in analysis_result:
+                return None
+            
+            stock_data = analysis_result['raw_data']
+            sector_name = analysis_result.get('sector_name', '未知板块')
+            index_code = analysis_result.get('index_code', '')
+            
+            if stock_data.empty:
+                return None
+            
+            # 创建子图
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=(
+                    f'{sector_name}({index_code}) - 权重股资金流向',
+                    f'{sector_name} - 权重分布',
+                    f'{sector_name} - 权重vs涨跌幅',
+                    f'{sector_name} - 龙头股表现'
+                ),
+                specs=[[{"type": "bar"}, {"type": "pie"}],
+                       [{"type": "scatter"}, {"type": "bar"}]]
+            )
+            
+            # 1. 权重股资金流向（按权重排序的前10只）
+            top_weight_stocks = stock_data.nlargest(10, '权重')
+            colors_flow = [self.colors['positive'] if x > 0 else self.colors['negative'] 
+                          for x in top_weight_stocks['主力净流入']]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=top_weight_stocks['主力净流入'],
+                    y=top_weight_stocks['股票名称'],
+                    orientation='h',
+                    marker_color=colors_flow,
+                    name='资金流向',
+                    text=top_weight_stocks['主力净流入'],
+                    texttemplate='%{text:.0f}万',
+                    hovertemplate='<b>%{y}</b><br>主力净流入: %{x:.0f}万<br>权重: %{customdata:.2f}%<extra></extra>',
+                    customdata=top_weight_stocks['权重'] * 100
+                ),
+                row=1, col=1
+            )
+            
+            # 2. 权重分布饼图（前8只股票）
+            top8_stocks = stock_data.nlargest(8, '权重')
+            other_weight = stock_data.iloc[8:]['权重'].sum() if len(stock_data) > 8 else 0
+            
+            pie_labels = top8_stocks['股票名称'].tolist()
+            pie_values = (top8_stocks['权重'] * 100).tolist()
+            
+            if other_weight > 0:
+                pie_labels.append('其他')
+                pie_values.append(other_weight * 100)
+            
+            fig.add_trace(
+                go.Pie(
+                    labels=pie_labels,
+                    values=pie_values,
+                    name='权重分布',
+                    textinfo='label+percent',
+                    textposition='inside'
+                ),
+                row=1, col=2
+            )
+            
+            # 3. 权重 vs 涨跌幅散点图
+            colors_scatter = [self.colors['positive'] if x > 0 else self.colors['negative'] 
+                             for x in stock_data['涨跌幅']]
+            
+            # 计算合适的点大小（限制在5-20之间）
+            weight_sizes = stock_data['权重'] * 1000
+            weight_sizes = np.clip(weight_sizes, 5, 20)  # 限制大小范围
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=stock_data['权重'] * 100,
+                    y=stock_data['涨跌幅'],
+                    mode='markers',
+                    marker=dict(
+                        color=colors_scatter, 
+                        size=weight_sizes,  # 使用处理后的大小
+                        sizemin=5,
+                        opacity=0.7
+                    ),
+                    text=stock_data['股票名称'],
+                    hovertemplate='<b>%{text}</b><br>权重: %{x:.2f}%<br>涨跌幅: %{y:.2f}%<br>主力净流入: %{customdata:.0f}万<extra></extra>',
+                    customdata=stock_data['主力净流入'],
+                    name='权重vs涨跌幅'
+                ),
+                row=2, col=1
+            )
+            
+            # 4. 权重前5股票的表现
+            top5_weight = stock_data.nlargest(5, '权重')
+            colors_perf = [self.colors['positive'] if x > 0 else self.colors['negative'] 
+                          for x in top5_weight['涨跌幅']]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=top5_weight['股票名称'],
+                    y=top5_weight['涨跌幅'],
+                    marker_color=colors_perf,
+                    name='权重股表现',
+                    text=top5_weight['涨跌幅'],
+                    texttemplate='%{text:.2f}%',
+                    hovertemplate='<b>%{x}</b><br>涨跌幅: %{y:.2f}%<br>权重: %{customdata:.2f}%<extra></extra>',
+                    customdata=top5_weight['权重'] * 100
+                ),
+                row=2, col=2
+            )
+            
+            # 更新布局
+            fig.update_layout(
+                title=f'{sector_name}({index_code}) 权重股分析',
+                height=800,
+                showlegend=False,
+                template='plotly_white'
+            )
+            
+            # 更新x轴标签
+            fig.update_xaxes(title_text="主力净流入(万元)", row=1, col=1)
+            fig.update_xaxes(title_text="权重(%)", row=2, col=1)
+            fig.update_xaxes(title_text="股票", row=2, col=2)
+            
+            # 更新y轴标签
+            fig.update_yaxes(title_text="股票", row=1, col=1)
+            fig.update_yaxes(title_text="涨跌幅(%)", row=2, col=1)
+            fig.update_yaxes(title_text="涨跌幅(%)", row=2, col=2)
+            
+            return fig
+            
+        except Exception as e:
+            self.logger.error(f"创建指数板块图表失败: {e}")
+            return None
+
     def create_sector_detail_chart(self, detail_analysis: Dict[str, Any]) -> Optional[go.Figure]:
         """
         创建板块详细分析图表
@@ -330,6 +472,154 @@ class SectorVisualizer:
             
         except Exception as e:
             self.logger.error(f"创建市场情绪仪表盘失败: {e}")
+            return None
+
+    def create_sector_history_chart(self, history_data: pd.DataFrame, analysis_result: Dict[str, Any]) -> Optional[go.Figure]:
+        """
+        创建板块历史趋势图表
+        :param history_data: 历史数据
+        :param analysis_result: 历史分析结果
+        :return: 图表对象
+        """
+        try:
+            if history_data.empty:
+                return None
+            
+            sector_name = history_data['板块名称'].iloc[0] if '板块名称' in history_data.columns else '板块'
+            
+            # 创建子图
+            fig = make_subplots(
+                rows=3, cols=2,
+                subplot_titles=(
+                    f'{sector_name} - 涨跌幅趋势',
+                    f'{sector_name} - 资金流向趋势',
+                    f'{sector_name} - 换手率趋势',
+                    f'{sector_name} - 成交量趋势',
+                    f'{sector_name} - 累计收益',
+                    f'{sector_name} - 上涨比例趋势'
+                ),
+                specs=[[{"secondary_y": False}, {"secondary_y": False}],
+                       [{"secondary_y": False}, {"secondary_y": False}],
+                       [{"secondary_y": False}, {"secondary_y": False}]]
+            )
+            
+            dates = history_data['交易日期']
+            
+            # 1. 涨跌幅趋势
+            colors_change = [self.colors['positive'] if x > 0 else self.colors['negative'] 
+                           for x in history_data['涨跌幅']]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=dates,
+                    y=history_data['涨跌幅'],
+                    marker_color=colors_change,
+                    name='日涨跌幅',
+                    hovertemplate='日期: %{x}<br>涨跌幅: %{y:.2f}%<extra></extra>'
+                ),
+                row=1, col=1
+            )
+            
+            # 2. 资金流向趋势
+            colors_fund = [self.colors['positive'] if x > 0 else self.colors['negative'] 
+                          for x in history_data['主力净流入']]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=dates,
+                    y=history_data['主力净流入'],
+                    marker_color=colors_fund,
+                    name='主力净流入',
+                    hovertemplate='日期: %{x}<br>主力净流入: %{y:.2f}万元<extra></extra>'
+                ),
+                row=1, col=2
+            )
+            
+            # 3. 换手率趋势
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=history_data['换手率'],
+                    mode='lines+markers',
+                    line=dict(color=self.colors['neutral'], width=2),
+                    marker=dict(size=4),
+                    name='换手率',
+                    hovertemplate='日期: %{x}<br>换手率: %{y:.2f}%<extra></extra>'
+                ),
+                row=2, col=1
+            )
+            
+            # 4. 成交量趋势
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=history_data['成交量'],
+                    mode='lines',
+                    fill='tonexty',
+                    line=dict(color=self.colors['neutral'], width=1),
+                    name='成交量',
+                    hovertemplate='日期: %{x}<br>成交量: %{y:.0f}<extra></extra>'
+                ),
+                row=2, col=2
+            )
+            
+            # 5. 累计收益曲线
+            cumulative_returns = (1 + history_data['涨跌幅'] / 100).cumprod() - 1
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=cumulative_returns * 100,
+                    mode='lines',
+                    line=dict(color=self.colors['positive'], width=3),
+                    name='累计收益率',
+                    hovertemplate='日期: %{x}<br>累计收益: %{y:.2f}%<extra></extra>'
+                ),
+                row=3, col=1
+            )
+            
+            # 6. 上涨比例趋势
+            fig.add_trace(
+                go.Scatter(
+                    x=dates,
+                    y=history_data['上涨比例'],
+                    mode='lines+markers',
+                    line=dict(color=self.colors['neutral'], width=2),
+                    marker=dict(size=4),
+                    name='上涨比例',
+                    hovertemplate='日期: %{x}<br>上涨比例: %{y:.1f}%<extra></extra>'
+                ),
+                row=3, col=2
+            )
+            
+            # 更新布局
+            fig.update_layout(
+                title=f'{sector_name} 历史趋势分析 ({len(history_data)}天)',
+                height=1000,
+                showlegend=False,
+                template='plotly_white'
+            )
+            
+            # 更新x轴标签
+            fig.update_xaxes(title_text="日期", row=1, col=1)
+            fig.update_xaxes(title_text="日期", row=1, col=2)
+            fig.update_xaxes(title_text="日期", row=2, col=1)
+            fig.update_xaxes(title_text="日期", row=2, col=2)
+            fig.update_xaxes(title_text="日期", row=3, col=1)
+            fig.update_xaxes(title_text="日期", row=3, col=2)
+            
+            # 更新y轴标签
+            fig.update_yaxes(title_text="涨跌幅(%)", row=1, col=1)
+            fig.update_yaxes(title_text="资金流入(万元)", row=1, col=2)
+            fig.update_yaxes(title_text="换手率(%)", row=2, col=1)
+            fig.update_yaxes(title_text="成交量", row=2, col=2)
+            fig.update_yaxes(title_text="累计收益率(%)", row=3, col=1)
+            fig.update_yaxes(title_text="上涨比例(%)", row=3, col=2)
+            
+            return fig
+            
+        except Exception as e:
+            self.logger.error(f"创建板块历史趋势图表失败: {e}")
             return None
 
 def create_sector_visualizer() -> SectorVisualizer:

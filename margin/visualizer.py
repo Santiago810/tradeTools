@@ -6,6 +6,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import seaborn as sns
 import plotly.graph_objects as go
 import plotly.express as px
@@ -22,9 +23,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import CHART_CONFIG, MARGIN_TRADING_CONFIG, STORAGE_CONFIG
 from utils import format_number, ensure_directories
 
-# 设置中文字体
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+# 设置中文字体 - macOS优化
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'DejaVu Sans', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
+# 设置字体大小
+plt.rcParams['font.size'] = 10
 
 class MarginDataVisualizer:
     """两融数据可视化器"""
