@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f4f6f9"><title>观市 · A股行情工作台</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><span class="brand-mark">▥</span><span>观市<small>GUANSHI</small></span></a>
+  <div class="nav-label">投资工作台</div>
+  <nav id="nav"><button data-page="market" class="active"><span>◈</span> 市场总览</button><button data-page="sectors"><span>▦</span> 板块观察</button><button data-page="assets"><span>⌁</span> 指数与 ETF</button><button data-page="watchlist"><span>☆</span> 我的自选 <i id="watch-count">0</i></button></nav>
+  <div class="sidebar-note"><span class="note-icon">◎</span><strong>让数据，连接你的判断。</strong><p>看趋势 · 看资金 · 看市场</p></div>
+  <div class="sidebar-bottom"><span class="green-dot"></span> 本地行情工作台 <small>v1.0</small></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><div><span class="breadcrumb">投资工作台</span><span class="slash">/</span><span id="breadcrumb">市场总览</span></div><div class="top-actions"><button class="link-button" id="source-status">数据状态</button><span class="timezone">中国市场 · UTC+8</span><select id="mode" aria-label="数据模式"><option value="live">真实行情</option><option value="demo">演示模式</option></select><span class="avatar">观</span></div></header>
+  <main>
+    <div class="page-heading"><div><div class="eyebrow">YOUR MARKET, AT A GLANCE</div><h1 id="page-title">市场总览<span class="title-dot">.</span></h1><p id="page-description">把握市场温度，观察资金流向，让每一次决策更有依据。</p></div><div class="heading-actions"><button id="refresh" class="button">↻ <span>刷新数据</span></button><button id="export" class="button dark">↓ 导出数据</button></div></div>
+    <div class="notice" id="notice" hidden></div>
+    <div class="toolbar"><div class="market-label"><span class="green-dot"></span> A 股市场 <span class="muted" id="asof">等待行情数据</span></div><div class="periods" id="periods"><button data-days="20">近 1 个月</button><button data-days="40" class="active">近 2 个月</button><button data-days="60">近 3 个月</button></div></div>
+    <div id="content" aria-live="polite"></div>
+    <footer><span>观市 GUANSHI <span class="footer-dot">·</span> 你的个人行情工作台</span><span>公开行情可能延迟；数据截至日期以各模块为准。</span></footer>
+  </main>
+</div>
+<div id="toast" role="status" hidden></div>
+<dialog id="sources-dialog"><div class="panel-head"><h2>数据源状态</h2><button class="button" id="close-sources" aria-label="关闭">关闭</button></div><div id="sources-content"></div></dialog>
+<script type="module" src="/app.js"></script>
+</body></html>
